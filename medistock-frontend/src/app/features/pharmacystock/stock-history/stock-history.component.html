@@ -1,0 +1,45 @@
+<div class="page-container">
+
+  <!-- HEADER -->
+  <div class="page-header">
+    <h1>📜 Stock History</h1>
+    <p>View the movement history for Stock Item {{ stockItemId }}</p>
+  </div>
+
+  <!-- ERROR MESSAGE -->
+  <div class="error-box" *ngIf="errorMessage">
+    {{ errorMessage }}
+  </div>
+
+  <!-- HISTORY CARD -->
+  <div class="card">
+    <h3>Stock Movements</h3>
+
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Type</th>
+            <th>Quantity Changed</th>
+            <th>Reference</th>
+            <th>Timestamp</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let move of movements">
+            <td>
+              <span [ngClass]="{
+                'in-badge': move.type === 'IN',
+                'out-badge': move.type === 'OUT'
+              }">{{ move.type }}</span>
+            </td>
+            <td>{{ move.quantityChanged }}</td>
+            <td>{{ move.reference }}</td>
+            <td>{{ move.timestamp | date:'short' }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
