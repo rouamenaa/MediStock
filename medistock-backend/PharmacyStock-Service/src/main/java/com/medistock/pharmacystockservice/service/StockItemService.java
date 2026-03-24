@@ -39,6 +39,9 @@ public class StockItemService {
         return stockItemRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "StockItem not found"));
     }
+    public List<StockItem> getAllStockItems() {
+        return stockItemRepository.findAll();
+    }
 
     public StockItem updateStockItem(Long id, int lowStockThreshold) {
         StockItem item = getStockItem(id);

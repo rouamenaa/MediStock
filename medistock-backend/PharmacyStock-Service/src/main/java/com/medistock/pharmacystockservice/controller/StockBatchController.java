@@ -6,9 +6,10 @@ import com.medistock.pharmacystockservice.service.StockBatchService;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-
 @RestController
 @RequestMapping("/api/stockitems/{stockItemId}/batches")
+@CrossOrigin(origins = "http://localhost:4200")
+
 public class StockBatchController {
 
     private final StockBatchService stockBatchService;

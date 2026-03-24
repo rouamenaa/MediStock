@@ -19,8 +19,12 @@ export class StockListComponent implements OnInit {
   errorMessage: string = '';
   searchTerm: string = '';
 
+  sortField: string = '';
+  sortDirection: 'asc' | 'desc' = 'asc';
+
   newStockItem: StockItem = {
     pharmacyId: 1,
+    medicationId: 0,  // <-- utiliser medicationId pour le backend
     medication: { id: 0, name: '', dosage: '' },
     totalQuantity: 0,
     reservedQuantity: 0,
@@ -35,66 +39,139 @@ export class StockListComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.loadStockItems();
-    this.loadMedications();
+    this.loadMedications(); // Charger les médicaments avant les stocks
+  }
+
+  loadMedications(): void {
+    this.medicationService.getAll().subscribe({
+      next: meds => {
+        this.medications = meds;
+        this.loadStockItems(); // Charger les stocks après les médicaments
+      },
+      error: () => this.errorMessage = 'Erreur chargement médicaments'
+    });
   }
 
   loadStockItems(): void {
     this.stockItemService.getAll().subscribe({
       next: items => {
-        this.stockItems = items;
-        this.filteredStockItems = items;
+        this.stockItems = items.map(item => {
+          const med = this.medications.find(m => m.id === item.medicationId);
+          return {
+            ...item,
+            medication: med || { id: item.medicationId || 0, name: 'Unknown', dosage: '' }
+          };
+        });
+        this.filteredStockItems = this.applySorting(this.stockItems);
       },
       error: () => this.errorMessage = 'Erreur lors du chargement des stocks'
     });
   }
 
-  loadMedications(): void {
-    this.medicationService.getAll().subscribe({
-      next: meds => this.medications = meds,
-      error: () => this.errorMessage = 'Erreur chargement médicaments'
-    });
-  }
+  /* ========================
+     SEARCH + SORT
+  ======================== */
 
   filterStock(): void {
-    if (!this.searchTerm.trim()) {
-      this.filteredStockItems = this.stockItems;
-      return;
+    const term = this.searchTerm.toLowerCase().trim();
+    let filtered = this.stockItems;
+
+    if (term) {
+      filtered = this.stockItems.filter(item =>
+        item.medication?.name.toLowerCase().includes(term)
+      );
     }
 
-    const term = this.searchTerm.toLowerCase();
-
-    this.filteredStockItems = this.stockItems.filter(item =>
-      item.medication.name.toLowerCase().includes(term)
-    );
+    this.filteredStockItems = this.applySorting(filtered);
   }
 
   resetFilter(): void {
     this.searchTerm = '';
-    this.filteredStockItems = this.stockItems;
+    this.filteredStockItems = this.applySorting(this.stockItems);
   }
 
-  addStockItem(): void {
-    if (this.newStockItem.medication.id === 0) {
-      this.errorMessage = 'Veuillez sélectionner un médicament';
-      return;
+  sortBy(field: string): void {
+    if (this.sortField === field) {
+      this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.sortField = field;
+      this.sortDirection = 'asc';
     }
+    this.filteredStockItems = this.applySorting(this.filteredStockItems);
+  }
 
-    this.stockItemService.create(this.newStockItem).subscribe({
-      next: () => {
-        this.loadStockItems();
-        this.newStockItem = {
-          pharmacyId: 1,
-          medication: { id: 0, name: '', dosage: '' },
-          totalQuantity: 0,
-          reservedQuantity: 0,
-          lowStockThreshold: 5,
-          status: 'AVAILABLE'
-        };
-      },
-      error: () => this.errorMessage = 'Erreur lors de la création du stock'
+  applySorting(items: StockItem[]): StockItem[] {
+    if (!this.sortField) return items;
+
+    return [...items].sort((a, b) => {
+      let valueA: any;
+      let valueB: any;
+
+      switch (this.sortField) {
+        case 'name':
+          valueA = a.medication?.name.toLowerCase() || '';
+          valueB = b.medication?.name.toLowerCase() || '';
+          break;
+        case 'quantity':
+          valueA = a.totalQuantity;
+          valueB = b.totalQuantity;
+          break;
+        case 'threshold':
+          valueA = a.lowStockThreshold;
+          valueB = b.lowStockThreshold;
+          break;
+        case 'status':
+          valueA = this.getStockStatus(a);
+          valueB = this.getStockStatus(b);
+          break;
+        default:
+          return 0;
+      }
+
+      if (valueA < valueB) return this.sortDirection === 'asc' ? -1 : 1;
+      if (valueA > valueB) return this.sortDirection === 'asc' ? 1 : -1;
+      return 0;
     });
   }
+
+  /* ========================
+     CRUD
+  ======================== */
+
+  addStockItem(): void {
+  if (!this.newStockItem.medicationId || this.newStockItem.medicationId === 0) {
+    this.errorMessage = 'Veuillez sélectionner un médicament';
+    return;
+  }
+
+  const selectedMed = this.medications.find(m => m.id === this.newStockItem.medicationId);
+  if (!selectedMed) {
+    this.errorMessage = 'Médicament invalide';
+    return;
+  }
+
+  // Construire l'objet complet pour le backend
+  const stockToCreate = {
+    ...this.newStockItem,
+    medication: selectedMed
+  };
+
+  this.stockItemService.create(stockToCreate).subscribe({
+    next: () => {
+      this.loadStockItems();
+      this.newStockItem = {
+        pharmacyId: 1,
+        medicationId: 0,
+        medication: { id: 0, name: '', dosage: '' },
+        totalQuantity: 0,
+        reservedQuantity: 0,
+        lowStockThreshold: 5,
+        status: 'AVAILABLE'
+      };
+    },
+    error: () => this.errorMessage = 'Erreur lors de la création du stock'
+  });
+}
 
   startEdit(item: StockItem): void {
     this.editingItem = { ...item };
@@ -119,6 +196,26 @@ export class StockListComponent implements OnInit {
     });
   }
 
+  deleteItem(item: StockItem): void {
+    if (item.id === undefined) return;
+
+    if (confirm(`Voulez-vous supprimer le stock ${item.medication?.name}?`)) {
+      this.stockItemService.delete(item.id).subscribe({
+        next: () => this.loadStockItems(),
+        error: () => this.errorMessage = 'Impossible de supprimer ce stock'
+      });
+    }
+  }
+
+  consumeStock(item: StockItem, quantity: number): void {
+    if (item.id === undefined || !quantity || quantity <= 0) return;
+
+    this.stockItemService.consume(item.id, quantity, '').subscribe({
+      next: () => this.loadStockItems(),
+      error: () => this.errorMessage = 'Erreur consommation stock'
+    });
+  }
+
   viewBatches(item: StockItem): void {
     if (item.id !== undefined) {
       this.router.navigate([`/pharmacystock/${item.id}/batches`]);
@@ -131,25 +228,9 @@ export class StockListComponent implements OnInit {
     }
   }
 
-  deleteItem(item: StockItem): void {
-    if (item.id === undefined) return;
-
-    if (confirm(`Voulez-vous supprimer le stock ${item.medication.name}?`)) {
-      this.stockItemService.delete(item.id).subscribe({
-        next: () => this.loadStockItems(),
-        error: () => this.errorMessage = 'Impossible de supprimer ce stock'
-      });
-    }
-  }
-
-  consumeStock(item: StockItem, quantity: number, reference: string): void {
-    if (item.id === undefined || !quantity || quantity <= 0) return;
-
-    this.stockItemService.consume(item.id, quantity, reference).subscribe({
-      next: () => this.loadStockItems(),
-      error: () => this.errorMessage = 'Erreur consommation stock'
-    });
-  }
+  /* ========================
+     STATUS
+  ======================== */
 
   getStockStatus(item: StockItem): string {
     if (item.totalQuantity === 0) return 'OUT_OF_STOCK';
@@ -167,8 +248,7 @@ export class StockListComponent implements OnInit {
   }
 
   isLowStock(item: StockItem): boolean {
-    return item.totalQuantity > 0 &&
-           item.totalQuantity <= item.lowStockThreshold;
+    return item.totalQuantity > 0 && item.totalQuantity <= item.lowStockThreshold;
   }
 
   isOutOfStock(item: StockItem): boolean {
