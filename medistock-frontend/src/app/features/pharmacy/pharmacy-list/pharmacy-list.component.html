@@ -1,0 +1,47 @@
+<div class="page-container">
+
+  <div class="page-header">
+    <h1>🏥 Pharmacies</h1>
+    <p>Liste de toutes les pharmacies enregistrées</p>
+  </div>
+
+  <div *ngIf="message" class="success-box">{{ message }}</div>
+
+  <div class="card">
+    <div class="add-btn">
+      <button class="btn-success" routerLink="/pharmacies/new">
+        ➕ Ajouter une pharmacie
+      </button>
+    </div>
+
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Nom</th>
+            <th>Adresse</th>
+            <th>Téléphone</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let p of pharmacies">
+            <td>{{ p.id }}</td>
+            <td>{{ p.name }}</td>
+            <td>{{ p.address }}</td>
+            <td>{{ p.phone }}</td>
+            <td>
+              <button class="btn-primary" [routerLink]="['/pharmacies/edit', p.id]">✏️ Modifier</button>
+              <button class="btn-danger" (click)="delete(p.id!)">🗑️ Supprimer</button>
+            </td>
+          </tr>
+          <tr *ngIf="pharmacies.length === 0">
+            <td colspan="5" style="text-align:center; color:#6c757d;">Aucune pharmacie trouvée</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
