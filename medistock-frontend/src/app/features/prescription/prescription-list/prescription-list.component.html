@@ -1,0 +1,110 @@
+<div class="page-container">
+
+  <!-- HEADER -->
+  <div class="page-header">
+    <h1>📋 Gestion des Prescriptions</h1>
+    <p>Liste et validation de toutes les prescriptions</p>
+  </div>
+
+  <!-- MESSAGES -->
+  <div class="error-box" *ngIf="errorMessage">{{ errorMessage }}</div>
+  <div class="success-box" *ngIf="successMessage">{{ successMessage }}</div>
+
+  <!-- FILTRES -->
+  <div class="card">
+    <div class="filter-bar">
+      <div class="form-group">
+        <label>Recherche</label>
+        <input type="text" [(ngModel)]="searchTerm" (input)="filterPrescriptions()"
+               placeholder="Patient, médecin ou numéro...">
+      </div>
+      <div class="form-group">
+        <label>Statut</label>
+        <select [(ngModel)]="selectedStatus" (change)="filterPrescriptions()">
+          <option value="">Tous</option>
+          <option *ngFor="let s of prescriptionStatuses" [value]="s">{{ s }}</option>
+        </select>
+      </div>
+      <div class="form-group align-end">
+        <button class="btn-secondary"
+                (click)="searchTerm=''; selectedStatus=''; filterPrescriptions()">
+          ↺ Reset
+        </button>
+        <a href="/prescriptions/new" class="add-btn">+ Nouvelle Prescription</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- LOADING -->
+  <div class="loading-box" *ngIf="loading">Chargement...</div>
+
+  <!-- TABLE -->
+  <div class="card" *ngIf="!loading">
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>N° Prescription</th>
+            <th>Patient</th>
+            <th>Médecin</th>
+            <th>Date émission</th>
+            <th>Expiration</th>
+            <th>Statut</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngIf="filteredPrescriptions.length === 0">
+            <td colspan="8" class="empty-row">Aucune prescription trouvée</td>
+          </tr>
+          <tr *ngFor="let p of filteredPrescriptions"
+              [class.expired-row]="isExpired(p)">
+            <td>{{ p.id }}</td>
+            <td><span class="rx-number">{{ p.prescriptionNumber }}</span></td>
+            <td>{{ p.patientName }}</td>
+            <td>{{ p.doctorName }}</td>
+            <td>{{ p.issueDate | date:'dd/MM/yyyy' }}</td>
+            <td [class.expired-text]="isExpired(p)">
+              {{ p.expiryDate ? (p.expiryDate | date:'dd/MM/yyyy') : '—' }}
+            </td>
+            <td>
+              <span [ngClass]="getStatusClass(p.status!)">{{ p.status }}</span>
+            </td>
+            <td class="action-buttons">
+
+              <!-- Valider -->
+              <button class="btn-success"
+                      *ngIf="p.status === PrescriptionStatus.PENDING_VALIDATION"
+                      (click)="validate(p, PrescriptionStatus.VALID)">
+                ✔ Valider
+              </button>
+
+              <!-- Rejeter -->
+              <button class="btn-danger"
+                      *ngIf="p.status === PrescriptionStatus.PENDING_VALIDATION"
+                      (click)="validate(p, PrescriptionStatus.REJECTED)">
+                ✕ Rejeter
+              </button>
+
+              <!-- Annuler -->
+              <button class="btn-warning"
+                      *ngIf="p.status !== 'CANCELLED' && p.status !== 'USED'"
+                      (click)="cancel(p)">
+                Annuler
+              </button>
+
+              <!-- Supprimer -->
+              <button class="btn-danger" (click)="delete(p.id!)">
+                Supprimer
+              </button>
+
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="table-footer">{{ filteredPrescriptions.length }} prescription(s) affichée(s)</p>
+  </div>
+
+</div>

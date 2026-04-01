@@ -1,0 +1,130 @@
+<div class="page-container">
+
+  <!-- HEADER -->
+  <div class="page-header">
+    <h1>📋 Nouvelle Prescription</h1>
+    <p>Remplissez les informations pour créer une prescription médicale</p>
+  </div>
+
+  <!-- MESSAGES -->
+  <div class="error-box" *ngIf="errorMessage">{{ errorMessage }}</div>
+  <div class="success-box" *ngIf="successMessage">{{ successMessage }}</div>
+
+  <form (ngSubmit)="onSubmit()">
+
+    <!-- PATIENT -->
+    <div class="card">
+      <h3>👤 Patient</h3>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>ID Patient *</label>
+          <input type="text" [(ngModel)]="prescription.patientId" name="patientId"
+                 placeholder="Ex: P001" required>
+        </div>
+        <div class="form-group">
+          <label>Nom du Patient *</label>
+          <input type="text" [(ngModel)]="prescription.patientName" name="patientName" required>
+        </div>
+        <div class="form-group">
+          <label>Diagnostic</label>
+          <input type="text" [(ngModel)]="prescription.diagnosis" name="diagnosis"
+                 placeholder="Ex: Hypertension">
+        </div>
+      </div>
+    </div>
+
+    <!-- MEDECIN -->
+    <div class="card">
+      <h3>🩺 Médecin</h3>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Nom du Médecin *</label>
+          <input type="text" [(ngModel)]="prescription.doctorName" name="doctorName" required>
+        </div>
+        <div class="form-group">
+          <label>N° Licence</label>
+          <input type="text" [(ngModel)]="prescription.doctorLicenseNumber"
+                 name="doctorLicenseNumber">
+        </div>
+        <div class="form-group">
+          <label>Date émission *</label>
+          <input type="date" [(ngModel)]="prescription.issueDate" name="issueDate" required>
+        </div>
+        <div class="form-group">
+          <label>Date expiration</label>
+          <input type="date" [(ngModel)]="prescription.expiryDate" name="expiryDate">
+        </div>
+      </div>
+    </div>
+
+    <!-- MEDICAMENTS -->
+    <div class="card">
+      <div class="section-header">
+        <h3>💊 Médicaments prescrits</h3>
+        <button type="button" class="add-btn" (click)="addItem()">+ Ajouter</button>
+      </div>
+
+      <div class="item-block" *ngFor="let item of prescription.items; let i = index; trackBy: trackByIndex">
+        <div class="item-header">
+          <span class="item-title">Médicament {{ i + 1 }}</span>
+          <button type="button" class="btn-danger" (click)="removeItem(i)"
+                  [disabled]="prescription.items.length === 1">
+            Supprimer
+          </button>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Nom *</label>
+            <input type="text" [(ngModel)]="item.medicationName" [name]="'medName'+i"
+                   placeholder="Amoxicilline 500mg" required>
+          </div>
+          <div class="form-group">
+            <label>Code</label>
+            <input type="text" [(ngModel)]="item.medicationCode" [name]="'medCode'+i">
+          </div>
+          <div class="form-group">
+            <label>Dosage *</label>
+            <input type="text" [(ngModel)]="item.dosage" [name]="'dosage'+i"
+                   placeholder="500mg" required>
+          </div>
+          <div class="form-group">
+            <label>Fréquence *</label>
+            <input type="text" [(ngModel)]="item.frequency" [name]="'freq'+i"
+                   placeholder="3x/jour" required>
+          </div>
+          <div class="form-group">
+            <label>Durée (jours)</label>
+            <input type="number" [(ngModel)]="item.durationDays" [name]="'duration'+i" min="1">
+          </div>
+          <div class="form-group">
+            <label>Quantité</label>
+            <input type="number" [(ngModel)]="item.quantity" [name]="'qty'+i" min="1">
+          </div>
+          <div class="form-group wide">
+            <label>Instructions</label>
+            <input type="text" [(ngModel)]="item.instructions" [name]="'instr'+i"
+                   placeholder="Prendre après les repas">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- NOTES + BOUTONS -->
+    <div class="card">
+      <div class="form-group">
+        <label>Notes complémentaires</label>
+        <textarea [(ngModel)]="prescription.notes" name="notes"
+                  rows="3" placeholder="Remarques..."></textarea>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <a href="/prescriptions" class="btn-secondary">✕ Annuler</a>
+      <button type="submit" class="btn-success" [disabled]="loading">
+        {{ loading ? 'Création...' : '✔ Créer la Prescription' }}
+      </button>
+    </div>
+
+  </form>
+</div>
