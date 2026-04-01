@@ -1,0 +1,99 @@
+/* BACKGROUND */
+.auth-container {
+    height: 100vh;
+    /* full screen */
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: linear-gradient(135deg, #0f4c4c, #1f7a7a);
+    font-family: 'Segoe UI', sans-serif;
+}
+
+/* CARD */
+.auth-card {
+    max-width: 380px;
+    width: 90%;
+    padding: 30px;
+    border-radius: 12px;
+    background: #f4f6f7;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+/* TITLE */
+.auth-card h2 {
+    margin-bottom: 20px;
+    color: #0f4c4c;
+}
+
+/* INPUT */
+.auth-card input {
+    width: 100%;
+    padding: 12px;
+    margin: 10px 0;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    transition: 0.3s;
+}
+
+.auth-card input:focus {
+    border-color: #1f7a7a;
+    outline: none;
+    box-shadow: 0 0 5px rgba(31, 122, 122, 0.5);
+}
+
+/* BUTTON */
+.auth-card button {
+    width: 100%;
+    padding: 12px;
+    margin-top: 10px;
+    background: #0f4c4c;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: 0.3s;
+}
+
+.auth-card button:hover {
+    background: #1f7a7a;
+}
+
+/* LINKS */
+.auth-card a {
+    color: #1f7a7a;
+    font-weight: bold;
+    text-decoration: none;
+}
+
+.auth-card a:hover {
+    text-decoration: underline;
+}
+
+/* ERROR */
+.error {
+    color: red;
+    margin-top: 10px;
+}
+
+/* ANIMATION */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(15px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+.error {
+  color: #e74c3c;
+  font-size: 12px;
+  margin-bottom: 10px;
+}
+input.ng-invalid.ng-touched {
+  border: 1px solid #e74c3c;
+}
