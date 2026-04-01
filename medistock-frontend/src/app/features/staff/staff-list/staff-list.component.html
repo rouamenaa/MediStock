@@ -1,0 +1,49 @@
+<div class="page-container">
+
+  <div class="page-header">
+    <h1>👥 Staff</h1>
+    <p>Liste de tous les membres du personnel</p>
+  </div>
+
+  <div *ngIf="message" class="success-box">{{ message }}</div>
+
+  <div class="card">
+    <div class="add-btn">
+      <button class="btn-success" routerLink="/staff/new">
+        ➕ Ajouter un membre
+      </button>
+    </div>
+
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Nom complet</th>
+            <th>Rôle</th>
+            <th>Téléphone</th>
+            <th>Pharmacie</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let s of staffList">
+            <td>{{ s.id }}</td>
+            <td>{{ s.fullName }}</td>
+            <td><span class="role-badge">{{ s.role }}</span></td>
+            <td>{{ s.phone }}</td>
+            <td>{{ s.pharmacy?.id }}</td>
+            <td>
+              <button class="btn-primary" [routerLink]="['/staff/edit', s.id]">✏️ Modifier</button>
+              <button class="btn-danger" (click)="delete(s.id!)">🗑️ Supprimer</button>
+            </td>
+          </tr>
+          <tr *ngIf="staffList.length === 0">
+            <td colspan="6" style="text-align:center; color:#6c757d;">Aucun membre trouvé</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>

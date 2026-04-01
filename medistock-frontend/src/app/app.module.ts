@@ -18,9 +18,13 @@ import { OrderFormComponent } from './features/order/order-form/order-form.compo
 import { PrescriptionListComponent } from './features/prescription/prescription-list/prescription-list.component';
 import { PrescriptionFormComponent } from './features/prescription/prescription-form/prescription-form.component';
 
+
 @NgModule({
   declarations: [
     AppComponent,
+
+   
+
 
     // Orders
     OrderListComponent,
