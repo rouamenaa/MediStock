@@ -1,0 +1,148 @@
+<div class="page-container">
+
+  <!-- HEADER -->
+  <div class="page-header">
+    <h1>📦 Stock Batches</h1>
+    <p>Manage batches for Stock Item {{ stockItemId }}</p>
+  </div>
+
+  <!-- ERROR MESSAGE -->
+  <div class="error-box" *ngIf="errorMessage">
+    {{ errorMessage }}
+  </div>
+
+  <!-- ADD BATCH CARD -->
+  <div class="card add-card">
+    <h3>Add New Batch</h3>
+
+    <div class="form-grid">
+
+      <div class="form-group">
+        <label>Batch Number</label>
+        <input type="text" [(ngModel)]="newBatch.batchNumber" placeholder="Enter batch number">
+      </div>
+
+      <div class="form-group">
+        <label>Expiration Date</label>
+        <input type="date" [(ngModel)]="newBatch.expirationDate">
+        <!-- ✅ Avertissement si date expirée -->
+        <small class="error-text" *ngIf="isDateExpired(newBatch.expirationDate)">
+          ⚠ Cette date est déjà expirée
+        </small>
+      </div>
+
+      <div class="form-group">
+        <label>Quantity</label>
+        <input type="number" min="1" [(ngModel)]="newBatch.initialQuantity">
+      </div>
+
+    </div>
+
+    <!-- ✅ Bouton désactivé si date expirée -->
+    <button class="btn-primary add-btn"
+            (click)="addBatch()"
+            [disabled]="isDateExpired(newBatch.expirationDate)">
+      + Add Batch
+    </button>
+  </div>
+
+  <!-- EXISTING BATCHES CARD -->
+  <div class="card">
+    <h3>Existing Batches</h3>
+
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Batch</th>
+            <th>Expiration</th>
+            <th>Initial Qty</th>
+            <th>Remaining Qty</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let batch of batches"
+              [class.expired-row]="isExpired(batch)"
+              [class.expiring-soon-row]="isExpiringSoon(batch)">
+
+            <!-- INLINE EDIT -->
+            <ng-container *ngIf="editBatch?.id === batch.id; else viewBatch">
+              <td><input [(ngModel)]="editBatch!.batchNumber" class="edit-input"></td>
+              <td>
+                <input type="date" [(ngModel)]="editBatch!.expirationDate" class="edit-input">
+                <!-- ✅ Avertissement date expirée en édition -->
+                <small class="error-text" *ngIf="isDateExpired(editBatch!.expirationDate)">
+                  ⚠ Date expirée
+                </small>
+              </td>
+              <td>
+                <input type="number" min="0" [(ngModel)]="editBatch!.initialQuantity" class="edit-input">
+                <!-- ✅ Avertissement en temps réel si quantité trop basse -->
+                <ng-container *ngIf="getBatchConsumed(editBatch!) as consumed">
+                  <small class="error-text"
+                         *ngIf="editBatch!.initialQuantity < consumed">
+                    ⚠ {{ consumed }} unité(s) déjà consommées, minimum {{ consumed }}
+                  </small>
+                  <small class="info-text"
+                         *ngIf="editBatch!.initialQuantity >= consumed">
+                    Il restera {{ editBatch!.initialQuantity - consumed }} unité(s) disponibles
+                  </small>
+                </ng-container>
+              </td>
+              <td>{{ editBatch!.remainingQuantity }}</td>
+              <td>
+                <span [ngClass]="{
+                  'expired-badge': isExpired(editBatch!),
+                  'expiring-badge': isExpiringSoon(editBatch!),
+                  'ok-badge': !isExpired(editBatch!) && !isExpiringSoon(editBatch!)
+                }">
+                  {{ isExpired(editBatch!) ? 'EXPIRED' : (isExpiringSoon(editBatch!) ? 'EXPIRING SOON' : 'OK') }}
+                </span>
+              </td>
+              <td>
+                <!-- ✅ Désactiver Save si date expirée -->
+                <button class="btn-success"
+                        (click)="updateBatch()"
+                        [disabled]="isDateExpired(editBatch!.expirationDate)">
+                  ✅
+                </button>
+                <button class="btn-secondary" (click)="cancelEdit()">❌</button>
+              </td>
+            </ng-container>
+
+            <!-- NORMAL VIEW -->
+            <ng-template #viewBatch>
+              <td>{{ batch.batchNumber }}</td>
+              <td>{{ batch.expirationDate }}</td>
+              <td>{{ batch.initialQuantity }}</td>
+              <td>{{ batch.remainingQuantity }}</td>
+              <td>
+                <span [ngClass]="{
+                  'expired-badge': isExpired(batch),
+                  'expiring-badge': isExpiringSoon(batch),
+                  'ok-badge': !isExpired(batch) && !isExpiringSoon(batch)
+                }">
+                  {{ isExpired(batch) ? 'EXPIRED' : (isExpiringSoon(batch) ? 'EXPIRING SOON' : 'OK') }}
+                </span>
+              </td>
+              <td class="action-buttons">
+                <!-- ✅ Bouton Edit désactivé si batch expiré -->
+                <button class="btn-warning"
+                        (click)="startEdit(batch)"
+                        [disabled]="isExpired(batch)"
+                        [title]="isExpired(batch) ? 'Batch expiré, modification impossible' : 'Modifier'">
+                  Edit
+                </button>
+                <button class="btn-danger" (click)="deleteBatch(batch)">Delete</button>
+              </td>
+            </ng-template>
+
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>

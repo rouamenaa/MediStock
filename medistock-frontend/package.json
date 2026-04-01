@@ -22,9 +22,12 @@
     "@angular/router": "^18.2.0",
     "@angular/ssr": "^18.2.21",
     "express": "^4.18.2",
+<<<<<<< HEAD
     "jwt-decode": "^4.0.0",
     "keycloak-angular": "^16.1.0",
     "keycloak-js": "^26.2.3",
+=======
+>>>>>>> ed078f4e8df98f5a6342e8aa3ac94267ff1b6aea
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",
     "zone.js": "~0.14.10"
@@ -44,4 +47,8 @@
     "karma-jasmine-html-reporter": "~2.1.0",
     "typescript": "~5.5.2"
   }
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> ed078f4e8df98f5a6342e8aa3ac94267ff1b6aea

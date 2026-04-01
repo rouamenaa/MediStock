@@ -5,8 +5,12 @@ import com.medistock.pharmacystockservice.entity.StockItem;
 import com.medistock.pharmacystockservice.service.StockItemService;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/stockitems")
+@CrossOrigin(origins = "http://localhost:4200")
+
 public class StockItemController {
 
     private final StockItemService stockItemService;
@@ -29,7 +33,10 @@ public class StockItemController {
     public StockItem update(@PathVariable Long id, @RequestParam int lowStockThreshold) {
         return stockItemService.updateStockItem(id, lowStockThreshold);
     }
-
+    @GetMapping
+    public List<StockItem> getAll() {
+        return stockItemService.getAllStockItems();
+    }
     @DeleteMapping("/{id}")
     public void delete(@PathVariable Long id) {
         stockItemService.deleteStockItem(id);

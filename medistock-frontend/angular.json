@@ -109,6 +109,12 @@
     }
   },
   "cli": {
+
     "analytics": false
+
+
+ 
+ 
+
   }
 }

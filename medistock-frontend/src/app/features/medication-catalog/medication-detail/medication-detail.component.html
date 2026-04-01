@@ -1,0 +1,134 @@
+<div class="page-container" *ngIf="form">
+  <a class="back-link" routerLink="/catalog/medications">← Retour à la liste</a>
+
+  <div class="page-header">
+    <h1>{{ form.name }}</h1>
+    <p>Fiche médicament · ID {{ medId }}</p>
+  </div>
+
+  <nav class="catalog-nav">
+    <a routerLink="/catalog/medications" routerLinkActive="active">Médicaments</a>
+    <a routerLink="/catalog/categories" routerLinkActive="active">Catégories</a>
+    <a routerLink="/catalog/active-principles" routerLinkActive="active">Principes actifs</a>
+  </nav>
+
+  <div class="error-box" *ngIf="errorMessage">{{ errorMessage }}</div>
+  <div class="success-box" *ngIf="successMessage">{{ successMessage }}</div>
+
+  <div class="card" *ngIf="form.referenceMedicationName">
+    <h3>Référence (générique)</h3>
+    <p>Ce médicament est rattaché au médicament de référence : <strong>{{ form.referenceMedicationName }}</strong></p>
+    <div class="card-footer-actions" *ngIf="!editSectionOpen">
+      <button type="button" class="btn-primary" (click)="openEditSection()">Mettre à jour</button>
+    </div>
+  </div>
+
+  <div class="card card-metre-a-jour-fallback" *ngIf="!form.referenceMedicationName && !editSectionOpen">
+    <div class="card-footer-actions">
+      <button type="button" class="btn-primary" (click)="openEditSection()">Mettre à jour</button>
+    </div>
+  </div>
+
+  <div class="card" *ngIf="editSectionOpen">
+    <h3>Modifier</h3>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Nom *</label>
+        <input type="text" [(ngModel)]="form.name">
+      </div>
+      <div class="form-group">
+        <label>Principe actif *</label>
+        <select [(ngModel)]="form.activePrincipleId">
+          <option *ngFor="let p of principles" [ngValue]="p.id">{{ p.name }} ({{ p.code }})</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Forme</label>
+        <input type="text" [(ngModel)]="form.form">
+      </div>
+      <div class="form-group">
+        <label>Dosage</label>
+        <input type="text" [(ngModel)]="form.dosage">
+      </div>
+      <div class="form-group">
+        <label>Laboratoire</label>
+        <input type="text" [(ngModel)]="form.laboratory">
+      </div>
+      <div class="form-group">
+        <label>Code produit</label>
+        <input type="text" [(ngModel)]="form.productCode">
+      </div>
+      <div class="form-group inline-actions">
+        <label>
+          <input type="checkbox" [(ngModel)]="form.active"> Actif
+        </label>
+      </div>
+    </div>
+
+    <h3 style="margin-top: 24px;">Catégories</h3>
+    <div class="checkbox-grid">
+      <label class="checkbox-item" *ngFor="let c of categories">
+        <input
+          type="checkbox"
+          [checked]="isCatChecked(c.id!)"
+          (change)="toggleCategory(c.id!)">
+        {{ c.name }}
+      </label>
+    </div>
+    <p *ngIf="!categories.length" style="color: #6c757d;">Aucune catégorie — créez-en dans l’onglet Catégories.</p>
+
+    <div class="modifier-footer">
+      <button class="btn-primary" type="button" (click)="save()">Enregistrer</button>
+      <button class="btn-secondary" type="button" (click)="closeEditSection()">Fermer l’édition</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Équivalents génériques (référence = ce médicament)</h3>
+    <p style="color: #6c757d; font-size: 14px; margin-bottom: 16px;">
+      Associez un autre médicament du catalogue comme générique de celui-ci (ID issu de la liste).
+    </p>
+    <div class="form-row">
+      <div class="form-group" style="max-width: 200px;">
+        <label>ID médicament générique</label>
+        <input type="number" [(ngModel)]="newGenericId" min="1" placeholder="ex. 12">
+      </div>
+      <button class="btn-info" type="button" (click)="addGeneric()">Associer</button>
+    </div>
+
+    <div class="table-wrapper" style="margin-top: 20px;">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nom</th>
+            <th>Dosage</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let g of generics">
+            <td>{{ g.id }}</td>
+            <td>{{ g.name }}</td>
+            <td>{{ g.dosage || '—' }}</td>
+            <td>
+              <button class="btn-danger" type="button" (click)="requestRemoveGeneric(g)">Retirer le lien</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <p *ngIf="!generics.length" style="padding: 16px; color: #6c757d;">Aucun générique lié.</p>
+    </div>
+  </div>
+
+  <app-catalog-confirm-dialog
+    [open]="genericPendingRemove !== null"
+    title="Retirer le lien générique"
+    [message]="genericRemoveMessage"
+    confirmLabel="Retirer le lien"
+    cancelLabel="Annuler"
+    [confirmDanger]="true"
+    (confirm)="executeRemoveGeneric()"
+    (cancel)="cancelRemoveGeneric()">
+  </app-catalog-confirm-dialog>
+</div>

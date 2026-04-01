@@ -1,12 +1,17 @@
+
 import { Component, Inject, OnInit, PLATFORM_ID } from '@angular/core';
 import { KeycloakService } from 'keycloak-angular';
 import { isPlatformBrowser } from '@angular/common';
 
 import { CommonModule } from '@angular/common';
 
+
+
+
 @Component({
   selector: 'app-navbar',
   standalone: true,
+
   imports: [CommonModule],
   templateUrl: './navbar.component.html',
   styleUrls: ['./navbar.component.css'],
@@ -49,6 +54,7 @@ export class NavbarComponent implements OnInit {
     this.isDark = !this.isDark;
 
     if (this.isDark) {
+
       document.body.classList.add('dark-mode');
       document.body.classList.remove('light-mode');
     } else {
@@ -56,4 +62,5 @@ export class NavbarComponent implements OnInit {
       document.body.classList.remove('dark-mode');
     }
   }
+
 }

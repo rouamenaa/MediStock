@@ -1,0 +1,30 @@
+<div class="page-container">
+
+  <div class="page-header">
+    <h1>{{ isEdit ? '✏️ Modifier' : '➕ Ajouter' }} une Pharmacie</h1>
+    <p>{{ isEdit ? 'Modifiez les informations de la pharmacie' : 'Remplissez les informations de la nouvelle pharmacie' }}</p>
+  </div>
+
+  <div class="card">
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Nom de la pharmacie</label>
+        <input [(ngModel)]="pharmacy.name" placeholder="Ex: Pharmacie Centrale" />
+      </div>
+      <div class="form-group">
+        <label>Adresse</label>
+        <input [(ngModel)]="pharmacy.address" placeholder="Ex: 12 Rue de la Paix, Tunis" />
+      </div>
+      <div class="form-group">
+        <label>Téléphone</label>
+        <input [(ngModel)]="pharmacy.phone" placeholder="Ex: +216 71 000 000" />
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button class="btn-primary" (click)="save()">💾 Enregistrer</button>
+      <button class="btn-secondary" routerLink="/pharmacies/list">Annuler</button>
+    </div>
+  </div>
+
+</div>

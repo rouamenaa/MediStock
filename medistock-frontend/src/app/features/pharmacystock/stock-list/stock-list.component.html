@@ -1,0 +1,219 @@
+<div class="page-container">
+
+  <!-- ✅ TOAST POPUP -->
+  <div class="toast-popup"
+       *ngIf="showPopup"
+       [ngClass]="{
+         'toast-error':   popupType === 'error',
+         'toast-success': popupType === 'success'
+       }">
+    <span class="toast-icon">
+      {{ popupType === 'error' ? '❌' : '✅' }}
+    </span>
+    <span class="toast-message">{{ popupMessage }}</span>
+    <button class="toast-close" (click)="closePopup()">✕</button>
+  </div>
+
+  <!-- HEADER -->
+  <div class="page-header">
+    <h1>💊 Pharmacy Stock Management</h1>
+    <p>Manage and monitor medication inventory efficiently</p>
+  </div>
+
+  <!-- ADD STOCK CARD -->
+  <div class="card">
+    <h3>Add New Stock Item</h3>
+
+    <div class="form-grid">
+
+      <div class="form-group">
+        <label>Medication</label>
+        <select [(ngModel)]="newStockItem.medicationId">
+          <option [ngValue]="0">-- Select Medication --</option>
+          <option *ngFor="let med of medications" [ngValue]="med.id">
+            {{ med.name }} ({{ med.dosage }})
+          </option>
+        </select>
+      </div>
+
+
+      <div class="form-group">
+        <label>Total Quantity</label>
+        <input type="number" [(ngModel)]="newStockItem.totalQuantity">
+      </div>
+
+      <div class="form-group">
+        <label>Low Stock Threshold</label>
+        <input type="number" [(ngModel)]="newStockItem.lowStockThreshold">
+      </div>
+
+
+    </div>
+
+
+    <button class="btn-primary add-btn"
+            (click)="addStockItem()"
+            [disabled]="!newStockItem.medicationId || newStockItem.medicationId === 0">
+      + Add Stock
+
+    </button>
+  </div>
+
+  <!-- SEARCH CARD -->
+  <div class="card">
+    <h3>Search Stock By Medication Name</h3>
+    <div class="form-row">
+      <input type="text"
+             placeholder="Enter medication name..."
+             [(ngModel)]="searchTerm"
+             (input)="filterStock()">
+      <button class="btn-secondary" (click)="resetFilter()">Reset</button>
+    </div>
+  </div>
+
+  <!-- STOCK TABLE CARD -->
+  <div class="card">
+    <h3>Stock List</h3>
+
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Status</th>
+            <th>ID</th>
+            <th>Medication</th>
+            <th>Total Qty</th>
+            <th>Available</th>
+            <th>Threshold</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <tr *ngFor="let item of filteredStockItems"
+              [class.low-stock-row]="isLowStock(item)"
+              [class.out-stock-row]="isOutOfStock(item)">
+
+            <td>
+              <span class="status-badge"
+                    [ngClass]="{
+                      'active': getStockStatus(item) === 'ACTIVE',
+                      'low':    getStockStatus(item) === 'LOW_STOCK',
+                      'out':    getStockStatus(item) === 'OUT_OF_STOCK'
+                    }">
+                {{ getReadableStatus(item) }}
+              </span>
+            </td>
+
+            <td>{{ item.id }}</td>
+            <td>{{ item.medication.name }}</td>
+
+            <td>
+              {{ item.totalQuantity }}
+              <span *ngIf="isLowStock(item)"  class="warning-icon">⚠</span>
+              <span *ngIf="isOutOfStock(item)" class="danger-icon">❌</span>
+            </td>
+
+            <td>
+              <span [ngClass]="{
+                'danger-text':  getAvailableStock(item) === 0,
+                'warning-text': getAvailableStock(item) > 0 && getAvailableStock(item) <= item.lowStockThreshold,
+                'success-text': getAvailableStock(item) > item.lowStockThreshold
+              }">
+                {{ getAvailableStock(item) }}
+              </span>
+              <span *ngIf="getAvailableStock(item) < item.totalQuantity"
+                    class="expired-hint"
+                    title="{{ item.totalQuantity - getAvailableStock(item) }} unit(s) expired or reserved">
+                ⚠
+              </span>
+            </td>
+
+            <td *ngIf="editingItem?.id !== item.id">{{ item.lowStockThreshold }}</td>
+            <td *ngIf="editingItem?.id === item.id">
+              <input type="number" min="0" [(ngModel)]="editingItem!.lowStockThreshold">
+            </td>
+
+            <td class="action-buttons">
+              <button *ngIf="editingItem?.id !== item.id"
+                      class="btn-warning" (click)="startEdit(item)">Edit</button>
+              <button *ngIf="editingItem?.id === item.id"
+                      class="btn-success" (click)="updateItem()">Save</button>
+              <button *ngIf="editingItem?.id === item.id"
+                      class="btn-secondary" (click)="cancelEdit()">Cancel</button>
+              <button class="btn-info"   (click)="viewBatches(item)">Batches</button>
+              <button class="btn-info"   (click)="viewHistory(item)">History</button>
+              <button class="btn-danger" (click)="deleteItem(item)">Delete</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- CONSUME STOCK CARD -->
+  <div class="card">
+    <h3>Consume Stock</h3>
+
+
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Medication</th>
+            <th>Available</th>
+            <th>Quantity to Consume</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of stockItems"
+              [class.out-stock-row]="getAvailableStock(item) === 0"
+              [class.low-stock-row]="getAvailableStock(item) > 0 && getAvailableStock(item) <= item.lowStockThreshold">
+
+            <td>{{ item.id }}</td>
+
+            <td>{{ item.medication.name }}</td>
+
+            <td>
+              <span [ngClass]="{
+                'danger-text':  getAvailableStock(item) === 0,
+                'warning-text': getAvailableStock(item) > 0 && getAvailableStock(item) <= item.lowStockThreshold,
+                'success-text': getAvailableStock(item) > item.lowStockThreshold
+              }">
+                <strong>{{ getAvailableStock(item) }}</strong> unit(s)
+              </span>
+              <span *ngIf="getAvailableStock(item) === 0" class="badge-out">Out of Stock</span>
+              <span *ngIf="getAvailableStock(item) > 0 && getAvailableStock(item) <= item.lowStockThreshold"
+                    class="badge-low">Low Stock</span>
+            </td>
+
+            <!-- ✅ ngModel sur la map au lieu d'une template ref variable -->
+            <td>
+              <input *ngIf="getAvailableStock(item) > 0"
+                     type="number"
+                     class="consume-input"
+                     min="1"
+                     [max]="getAvailableStock(item)"
+                     placeholder="Enter qty..."
+                     [(ngModel)]="consumeQuantities[item.id!]">
+              <span *ngIf="getAvailableStock(item) === 0" class="na-text">—</span>
+            </td>
+
+            <td>
+              <button class="btn-primary"
+                      *ngIf="getAvailableStock(item) > 0"
+                      (click)="consumeStock(item, consumeQuantities[item.id!])">
+                Consume
+              </button>
+              <span *ngIf="getAvailableStock(item) === 0" class="na-text">—</span>
+            </td>
+
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>

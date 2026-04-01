@@ -97,6 +97,7 @@
   margin-right: 10px;
 }
 
+
 .navbar-right {
   position: relative;
 }
@@ -158,6 +159,7 @@
     opacity: 1;
     transform: translateY(0);
   }
+
 }
 
 /* notifications */
