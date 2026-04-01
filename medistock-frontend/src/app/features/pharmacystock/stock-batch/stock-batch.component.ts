@@ -26,43 +26,89 @@ export class StockBatchComponent implements OnInit {
     if (!this.stockItemId) return;
 
     this.batchService.getBatchesByStockItem(this.stockItemId).subscribe({
-  next: (batches: StockBatch[]) => {
-    this.batches = batches.sort((a: StockBatch, b: StockBatch) =>
-      new Date(a.expirationDate).getTime() - new Date(b.expirationDate).getTime()
-    );
-  },
-  error: () => this.errorMessage = 'Erreur chargement batches'
-});
+      next: (batches: StockBatch[]) => {
+        this.batches = batches.sort((a: StockBatch, b: StockBatch) =>
+          new Date(a.expirationDate).getTime() - new Date(b.expirationDate).getTime()
+        );
+      },
+      error: () => this.errorMessage = 'Erreur chargement batches'
+    });
+  }
+
+  // ✅ Vérifie si une date string est expirée
+  isDateExpired(dateStr: string): boolean {
+    if (!dateStr) return false;
+    return new Date(dateStr) < new Date();
   }
 
   addBatch(): void {
+    if (!this.newBatch.batchNumber || !this.newBatch.expirationDate || this.newBatch.initialQuantity <= 0) {
+      this.errorMessage = 'Veuillez remplir tous les champs';
+      return;
+    }
+
+    // ✅ Bloquer si la date est expirée
+    if (this.isDateExpired(this.newBatch.expirationDate)) {
+      this.errorMessage = 'Impossible d\'ajouter un batch déjà expiré';
+      return;
+    }
+
     this.newBatch.remainingQuantity = this.newBatch.initialQuantity;
     this.batchService.create(this.stockItemId, this.newBatch).subscribe({
       next: () => {
         this.loadBatches();
         this.newBatch = { batchNumber: '', expirationDate: '', initialQuantity: 0, remainingQuantity: 0 };
+        this.errorMessage = '';
       },
       error: () => this.errorMessage = 'Erreur ajout batch'
     });
   }
 
   startEdit(batch: StockBatch): void {
+    // ✅ Bloquer l'édition d'un batch expiré
+    if (this.isExpired(batch)) {
+      this.errorMessage = 'Impossible de modifier un batch expiré';
+      return;
+    }
+    this.errorMessage = '';
     this.editBatch = { ...batch };
   }
 
   cancelEdit(): void {
     this.editBatch = null;
+    this.errorMessage = '';
   }
 
   updateBatch(): void {
     if (!this.editBatch || !this.editBatch.id) return;
 
-    this.editBatch.remainingQuantity = this.editBatch.initialQuantity;
+    // ✅ Bloquer si la nouvelle date est expirée
+    if (this.isDateExpired(this.editBatch.expirationDate)) {
+      this.errorMessage = 'La date d\'expiration ne peut pas être dans le passé';
+      return;
+    }
 
-    this.batchService.update(this.stockItemId, this.editBatch.id, this.editBatch).subscribe({
+    // ✅ Récupérer le batch original pour comparer
+    const originalBatch = this.batches.find(b => b.id === this.editBatch!.id);
+    if (originalBatch) {
+      const consumed = originalBatch.initialQuantity - originalBatch.remainingQuantity;
+      const newRemaining = this.editBatch.initialQuantity - consumed;
+
+      if (newRemaining < 0) {
+        this.errorMessage = `Quantité invalide : ${consumed} unité(s) ont déjà été consommées, il en reste ${originalBatch.remainingQuantity} à utiliser`;
+        return;
+      }
+
+      this.editBatch.remainingQuantity = newRemaining;
+    } else {
+      this.editBatch.remainingQuantity = this.editBatch.initialQuantity;
+    }
+
+    this.batchService.update(this.stockItemId, this.editBatch.id!, this.editBatch).subscribe({
       next: () => {
         this.loadBatches();
         this.editBatch = null;
+        this.errorMessage = '';
       },
       error: () => this.errorMessage = 'Erreur mise à jour batch'
     });
@@ -70,11 +116,18 @@ export class StockBatchComponent implements OnInit {
 
   deleteBatch(batch: StockBatch): void {
     if (confirm(`Supprimer batch ${batch.batchNumber}?`)) {
-      this.batchService.delete(batch.id!).subscribe({
+      this.batchService.delete(this.stockItemId, batch.id!).subscribe({
         next: () => this.loadBatches(),
         error: () => this.errorMessage = 'Erreur suppression batch'
       });
     }
+  }
+
+  // ✅ Retourne le nombre d'unités déjà consommées pour un batch
+  getBatchConsumed(batch: StockBatch): number {
+    const original = this.batches.find(b => b.id === batch.id);
+    if (!original) return 0;
+    return original.initialQuantity - original.remainingQuantity;
   }
 
   // ✅ Vérifie si le batch est expiré
