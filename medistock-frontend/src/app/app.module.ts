@@ -10,9 +10,11 @@ import { PharmacystockModule } from './features/pharmacystock/pharmacystock.modu
 import { LayoutComponent } from "./core/layout/layout.component";
 import { HttpClientModule } from '@angular/common/http';
 
+
 @NgModule({
   declarations: [
-    AppComponent
+    AppComponent,
+   
 
   ],
   imports: [
