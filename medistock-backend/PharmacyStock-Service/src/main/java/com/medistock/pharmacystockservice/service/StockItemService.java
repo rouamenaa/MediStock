@@ -10,8 +10,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.http.HttpStatus;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class StockItemService {
@@ -68,19 +70,35 @@ public class StockItemService {
     }
 
     // Consommer stock FIFO
+    // Consommer stock FIFO (sans les batches expirés)
     @Transactional
     public void consumeStock(StockItem item, int quantity, String reference) {
-        int available = item.getTotalQuantity() - item.getReservedQuantity();
-        if(quantity > available)
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Not enough stock available");
+        LocalDate today = LocalDate.now();
 
-        List<StockBatch> batches = stockBatchRepository.findByStockItemOrderByExpirationDateAsc(item);
+        // Filtrer les batches non expirés seulement
+        List<StockBatch> batches = stockBatchRepository
+                .findByStockItemOrderByExpirationDateAsc(item)
+                .stream()
+                .filter(b -> b.getExpirationDate() != null && !b.getExpirationDate().isBefore(today))
+                .collect(Collectors.toList());
+
+        // Calculer le stock réellement disponible (non expiré, non réservé)
+        int availableNonExpired = batches.stream()
+                .mapToInt(StockBatch::getRemainingQuantity)
+                .sum() - item.getReservedQuantity();
+
+        if (quantity > availableNonExpired)
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Not enough non-expired stock available");
+
         int remaining = quantity;
-        for(StockBatch batch : batches) {
-            if(batch.getRemainingQuantity() >= remaining) {
+        for (StockBatch batch : batches) {
+            if (remaining <= 0) break;
+
+            if (batch.getRemainingQuantity() >= remaining) {
                 batch.setRemainingQuantity(batch.getRemainingQuantity() - remaining);
                 stockBatchRepository.save(batch);
-                break;
+                remaining = 0;
             } else {
                 remaining -= batch.getRemainingQuantity();
                 batch.setRemainingQuantity(0);

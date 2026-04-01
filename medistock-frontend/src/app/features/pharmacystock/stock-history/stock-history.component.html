@@ -1,45 +1,104 @@
-<div class="page-container">
+<div class="history-shell">
+
+  <!-- SCANLINE OVERLAY -->
+  <div class="scanlines"></div>
 
   <!-- HEADER -->
-  <div class="page-header">
-    <h1>📜 Stock History</h1>
-    <p>View the movement history for Stock Item {{ stockItemId }}</p>
+  <div class="terminal-header">
+    <div class="terminal-tag">MEDISTOCK // AUDIT LOG</div>
+    <h1 class="terminal-title">Stock History</h1>
+    <p class="terminal-sub">
+      <span class="blink">▶</span>
+      ITEM_ID <span class="accent">{{ stockItemId }}</span> &nbsp;·&nbsp;
+      {{ movements.length }} RECORDS INDEXED
+    </p>
   </div>
 
-  <!-- ERROR MESSAGE -->
-  <div class="error-box" *ngIf="errorMessage">
-    {{ errorMessage }}
+  <!-- ERROR -->
+  <div class="error-terminal" *ngIf="errorMessage">
+    <span class="error-icon">✖</span> {{ errorMessage }}
   </div>
 
-  <!-- HISTORY CARD -->
-  <div class="card">
-    <h3>Stock Movements</h3>
-
-    <div class="table-wrapper">
-      <table>
-        <thead>
-          <tr>
-            <th>Type</th>
-            <th>Quantity Changed</th>
-            <th>Reference</th>
-            <th>Timestamp</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let move of movements">
-            <td>
-              <span [ngClass]="{
-                'in-badge': move.type === 'IN',
-                'out-badge': move.type === 'OUT'
-              }">{{ move.type }}</span>
-            </td>
-            <td>{{ move.quantityChanged }}</td>
-            <td>{{ move.reference }}</td>
-            <td>{{ move.timestamp | date:'short' }}</td>
-          </tr>
-        </tbody>
-      </table>
+  <!-- STATS ROW -->
+  <div class="stats-grid" *ngIf="movements.length > 0">
+    <div class="stat-card stat-add">
+      <div class="stat-label">TOTAL ADDED</div>
+      <div class="stat-value">+{{ totalAdded }}</div>
+      <div class="stat-bar"><div class="stat-fill fill-add"></div></div>
     </div>
+    <div class="stat-card stat-consume">
+      <div class="stat-label">TOTAL CONSUMED</div>
+      <div class="stat-value">-{{ totalConsumed }}</div>
+      <div class="stat-bar"><div class="stat-fill fill-consume"></div></div>
+    </div>
+    <div class="stat-card stat-expired">
+      <div class="stat-label">TOTAL EXPIRED</div>
+      <div class="stat-value">-{{ totalExpired }}</div>
+      <div class="stat-bar"><div class="stat-fill fill-expired"></div></div>
+    </div>
+    <div class="stat-card stat-balance" [class.negative]="netBalance < 0">
+      <div class="stat-label">NET BALANCE</div>
+      <div class="stat-value">{{ netBalance >= 0 ? '+' : '' }}{{ netBalance }}</div>
+      <div class="stat-bar"><div class="stat-fill fill-balance"></div></div>
+    </div>
+  </div>
+
+  <!-- FILTER TABS -->
+  <div class="filter-tabs" *ngIf="movements.length > 0">
+    <button class="filter-btn" [class.active]="activeFilter === 'ALL'"     (click)="applyFilter('ALL')">ALL</button>
+    <button class="filter-btn" [class.active]="activeFilter === 'ADD'"     (click)="applyFilter('ADD')">ADD</button>
+    <button class="filter-btn" [class.active]="activeFilter === 'CONSUME'" (click)="applyFilter('CONSUME')">CONSUME</button>
+    <button class="filter-btn" [class.active]="activeFilter === 'REMOVE'"  (click)="applyFilter('REMOVE')">REMOVE</button>
+    <button class="filter-btn" [class.active]="activeFilter === 'EXPIRED'" (click)="applyFilter('EXPIRED')">EXPIRED</button>
+    <span class="filter-count">{{ filteredMovements.length }} entries</span>
+  </div>
+
+  <!-- TIMELINE -->
+  <div class="timeline" *ngIf="filteredMovements.length > 0">
+    <div class="timeline-track"></div>
+
+    <div class="timeline-entry"
+         *ngFor="let move of filteredMovements; let i = index"
+         [class]="getTypeClass(move.type)"
+         [style.animation-delay]="(i * 60) + 'ms'">
+
+      <!-- NODE -->
+      <div class="tl-node">
+        <span class="tl-icon">{{ getIcon(move.type) }}</span>
+      </div>
+
+      <!-- CARD -->
+      <div class="tl-card">
+        <div class="tl-card-header">
+          <span class="tl-type-badge" [class]="getTypeClass(move.type)">
+            {{ move.type }}
+          </span>
+          <span class="tl-qty" [class]="getTypeClass(move.type)">
+            {{ getQuantityDisplay(move) }} units
+          </span>
+          <span class="tl-time">{{ move.timestamp | date:'dd MMM yyyy · HH:mm' }}</span>
+        </div>
+        <div class="tl-reference" *ngIf="move.reference">
+          <span class="ref-label">REF</span>
+          <span class="ref-value">{{ move.reference }}</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- EMPTY STATE -->
+  <div class="empty-state" *ngIf="movements.length === 0 && !errorMessage">
+    <div class="empty-icon">◌</div>
+    <div class="empty-text">NO MOVEMENTS RECORDED</div>
+    <div class="empty-sub">This stock item has no history yet.</div>
+  </div>
+
+  <!-- NO RESULTS FOR FILTER -->
+  <div class="empty-state" *ngIf="filteredMovements.length === 0 && movements.length > 0">
+    <div class="empty-icon">⊘</div>
+    <div class="empty-text">NO {{ activeFilter }} EVENTS</div>
+    <div class="empty-sub">Try a different filter.</div>
   </div>
 
 </div>

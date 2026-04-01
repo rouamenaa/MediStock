@@ -9,6 +9,7 @@ import { StockListComponent } from './features/pharmacystock/stock-list/stock-li
 import { PharmacystockModule } from './features/pharmacystock/pharmacystock.module';
 import { LayoutComponent } from "./core/layout/layout.component";
 import { HttpClientModule } from '@angular/common/http';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 
 @NgModule({
   declarations: [
@@ -20,7 +21,8 @@ import { HttpClientModule } from '@angular/common/http';
     AppRoutingModule,
     PharmacystockModule,
     LayoutComponent,
-    HttpClientModule
+    HttpClientModule,
+    BrowserAnimationsModule
 ],
   providers: [
     provideClientHydration()
