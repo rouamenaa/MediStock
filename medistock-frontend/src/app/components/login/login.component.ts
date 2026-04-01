@@ -1,3 +1,4 @@
+
 import { Component, Inject, OnInit, PLATFORM_ID } from '@angular/core';
 import { KeycloakService } from 'keycloak-angular';
 import { isPlatformBrowser } from '@angular/common';
@@ -7,6 +8,7 @@ import { isPlatformBrowser } from '@angular/common';
   template: '<p>Redirecting to login...</p>'
 })
 export class LoginComponent implements OnInit {
+
 
   constructor(
     @Inject(KeycloakService) private keycloak: KeycloakService,
@@ -19,4 +21,5 @@ export class LoginComponent implements OnInit {
       redirectUri: window.location.origin
     });
   }
+
 }

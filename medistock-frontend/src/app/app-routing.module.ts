@@ -21,6 +21,7 @@ const routes: Routes = [
     loadChildren: () => import('./features/pharmacystock/pharmacystock.module')
       .then(m => m.PharmacystockModule)
   },
+
   {
     path: 'pharmacies',
     loadChildren: () => import('./features/pharmacy/pharmacy.module')
@@ -40,6 +41,7 @@ const routes: Routes = [
     path: 'orders',
     loadChildren: () => import('./features/order/order.module')
       .then(m => m.OrderModule)
+
   }
 ]
   },
@@ -54,11 +56,3 @@ const routes: Routes = [
 })
 
 export class AppRoutingModule { }
-
-
-
-
-
-
-
-

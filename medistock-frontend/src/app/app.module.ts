@@ -1,3 +1,4 @@
+
 import { NgModule, APP_INITIALIZER, PLATFORM_ID } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';  // ← supprimer provideClientHydration
 import { isPlatformBrowser, CommonModule } from '@angular/common';
@@ -72,5 +73,8 @@ function initializeKeycloak(keycloak: KeycloakService, platformId: Object) {
     }
   ],
   bootstrap: [AppComponent]
+
+
 })
-export class AppModule { }
+
+export class AppRoutingModule { }
