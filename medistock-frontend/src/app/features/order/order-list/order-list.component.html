@@ -1,0 +1,107 @@
+<div class="page-container">
+
+  <!-- HEADER -->
+  <div class="page-header">
+    <h1>🛒 Gestion des Commandes</h1>
+    <p>Liste et suivi de toutes les commandes</p>
+  </div>
+
+  <!-- MESSAGES -->
+  <div class="error-box" *ngIf="errorMessage">{{ errorMessage }}</div>
+  <div class="success-box" *ngIf="successMessage">{{ successMessage }}</div>
+
+  <!-- FILTRES -->
+  <div class="card">
+    <div class="filter-bar">
+      <div class="form-group">
+        <label>Recherche</label>
+        <input type="text" [(ngModel)]="searchTerm" (input)="filterOrders()"
+               placeholder="Patient ou numéro...">
+      </div>
+      <div class="form-group">
+        <label>Statut</label>
+        <select [(ngModel)]="selectedStatus" (change)="filterOrders()">
+          <option value="">Tous</option>
+          <option *ngFor="let s of orderStatuses" [value]="s">{{ s }}</option>
+        </select>
+      </div>
+      <div class="form-group align-end">
+        <button class="btn-secondary" (click)="searchTerm=''; selectedStatus=''; filterOrders()">
+          ↺ Reset
+        </button>
+        <a href="/orders/new" class="add-btn">+ Nouvelle Commande</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- LOADING -->
+  <div class="loading-box" *ngIf="loading">Chargement...</div>
+
+  <!-- TABLE -->
+  <div class="card" *ngIf="!loading">
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>N° Commande</th>
+            <th>Patient</th>
+            <th>Pharmacie</th>
+            <th>Total</th>
+            <th>Statut</th>
+            <th>Date</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngIf="filteredOrders.length === 0">
+            <td colspan="8" class="empty-row">Aucune commande trouvée</td>
+          </tr>
+          <tr *ngFor="let order of filteredOrders">
+            <td>{{ order.id }}</td>
+            <td><span class="order-number">{{ order.orderNumber }}</span></td>
+            <td>{{ order.patientName }}</td>
+            <td>{{ order.pharmacyId }}</td>
+            <td class="amount">{{ order.totalAmount | number:'1.2-2' }} DT</td>
+            <td>
+              <span [ngClass]="getStatusClass(order.status!)">
+                {{ order.status }}
+              </span>
+            </td>
+            <td>{{ order.createdAt | date:'dd/MM/yyyy HH:mm' }}</td>
+            <td class="action-buttons">
+
+              <!-- Changer statut -->
+              <div class="dropdown" *ngIf="getNextStatuses(order.status!).length > 0">
+                <button class="btn-primary dropdown-toggle" (click)="toggleDropdown(order.id!)">
+                  → Statut
+                </button>
+                <div class="dropdown-menu" [class.open]="openDropdownId === order.id">
+                  <div *ngFor="let s of getNextStatuses(order.status!)"
+                       class="dropdown-item" (click)="updateStatus(order, s); openDropdownId = null">
+                    → {{ s }}
+                  </div>
+                </div>
+              </div>
+
+              <!-- Annuler -->
+              <button class="btn-warning"
+                      *ngIf="order.status !== 'CANCELLED' && order.status !== 'DELIVERED'"
+                      (click)="cancelOrder(order)">
+                Annuler
+              </button>
+
+              <!-- Supprimer -->
+              <button class="btn-danger" (click)="deleteOrder(order.id!)">
+                Supprimer
+              </button>
+
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="table-footer">{{ filteredOrders.length }} commande(s) affichée(s)</p>
+  </div>
+
+</div>
