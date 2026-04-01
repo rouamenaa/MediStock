@@ -1,0 +1,117 @@
+<div class="page-container">
+  <div class="page-header">
+    <h1>Principes actifs (DCI)</h1>
+  </div>
+
+  <div class="catalog-toolbar">
+    <nav class="catalog-nav">
+      <a routerLink="/catalog/medications" routerLinkActive="active">Médicaments</a>
+      <a routerLink="/catalog/categories" routerLinkActive="active">Catégories</a>
+      <a routerLink="/catalog/active-principles" routerLinkActive="active">Principes actifs</a>
+    </nav>
+    <button
+      *ngIf="!addSectionOpen"
+      type="button"
+      class="btn-primary catalog-add-btn"
+      (click)="openAddSection()">
+      Ajouter
+    </button>
+  </div>
+
+  <div class="error-box" *ngIf="errorMessage">{{ errorMessage }}</div>
+  <div class="success-box" *ngIf="successMessage">{{ successMessage }}</div>
+
+  <div class="card" *ngIf="addSectionOpen">
+    <div class="add-form-header">
+      <h3>Nouveau principe actif</h3>
+      <button type="button" class="btn-secondary" (click)="closeAddSection()">Fermer</button>
+    </div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Code DCI *</label>
+        <input type="text" [(ngModel)]="draft.code">
+      </div>
+      <div class="form-group">
+        <label>Nom *</label>
+        <input type="text" [(ngModel)]="draft.name">
+      </div>
+      <div class="form-group" style="grid-column: 1 / -1;">
+        <label>Description</label>
+        <textarea rows="2" [(ngModel)]="draft.description"></textarea>
+      </div>
+    </div>
+    <div class="add-form-footer">
+      <button class="btn-primary" type="button" (click)="create()">Créer</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Recherche</h3>
+    <div class="form-row">
+      <div class="form-group" style="flex: 1; min-width: 200px;">
+        <label>Filtrer (nom ou code)</label>
+        <input type="text" [(ngModel)]="search" placeholder="Laisser vide pour tout afficher">
+      </div>
+      <button class="btn-info" type="button" (click)="load()">Appliquer</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Liste</h3>
+    <p *ngIf="!principles.length" class="principle-list-empty">Aucun principe actif à afficher.</p>
+    <div class="principle-cards" *ngIf="principles.length">
+      <article class="principle-card" *ngFor="let p of principles">
+        <div *ngIf="editing?.id !== p.id" class="principle-card-body">
+          <div class="principle-card-top">
+            <span class="principle-card-id">ID {{ p.id }}</span>
+            <span class="principle-card-code-pill">{{ p.code }}</span>
+          </div>
+          <h4 class="principle-card-name">{{ p.name }}</h4>
+          <dl class="principle-card-dl">
+            <div class="principle-card-row">
+              <dt>Description</dt>
+              <dd>{{ p.description || '—' }}</dd>
+            </div>
+          </dl>
+          <div class="principle-card-actions">
+            <button class="btn-info" type="button" (click)="startEdit(p)">Modifier</button>
+            <button class="btn-danger" type="button" (click)="requestDeletePrinciple(p)">Supprimer</button>
+          </div>
+        </div>
+        <div *ngIf="editing?.id === p.id" class="principle-card-body principle-card-edit">
+          <div class="principle-card-top">
+            <span class="principle-card-id">ID {{ editing!.id }}</span>
+          </div>
+          <h4 class="principle-card-edit-title">Modifier le principe actif</h4>
+          <div class="form-group">
+            <label>Code DCI *</label>
+            <input type="text" [(ngModel)]="editing!.code">
+          </div>
+          <div class="form-group">
+            <label>Nom *</label>
+            <input type="text" [(ngModel)]="editing!.name">
+          </div>
+          <div class="form-group">
+            <label>Description</label>
+            <textarea rows="2" [(ngModel)]="editing!.description"></textarea>
+          </div>
+          <div class="principle-card-actions">
+            <button class="btn-primary" type="button" (click)="saveEdit()">Enregistrer</button>
+            <button class="btn-secondary" type="button" (click)="cancelEdit()">Annuler</button>
+          </div>
+        </div>
+      </article>
+    </div>
+  </div>
+
+  <app-catalog-confirm-dialog
+    [open]="principlePendingDelete !== null"
+    title="Supprimer le principe actif"
+    [message]="principleDeleteMessage"
+    confirmLabel="Supprimer"
+    cancelLabel="Annuler"
+    [confirmDanger]="true"
+    (confirm)="executeDeletePrinciple()"
+    (cancel)="cancelDeletePrinciple()">
+  </app-catalog-confirm-dialog>
+</div>

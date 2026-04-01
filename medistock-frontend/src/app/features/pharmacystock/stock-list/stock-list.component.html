@@ -18,15 +18,16 @@
   <div class="form-grid">
 
     <!-- DROPDOWN MEDICATION -->
-   <div class="form-group">
-  <label>Medication</label>
-  <select [(ngModel)]="newStockItem.medicationId">
-    <option [ngValue]="0">-- Select Medication --</option>
-    <option *ngFor="let med of medications" [ngValue]="med.id">
-      {{ med.name }} ({{ med.dosage }})
-    </option>
-  </select>
-</div>
+    <div class="form-group">
+      <label>Medication</label>
+      <select [(ngModel)]="newStockItem.medication.id">
+        <option [ngValue]="0">-- Select Medication --</option>
+        <option *ngFor="let med of medications"
+                [ngValue]="med.id">
+          {{ med.name }} ({{ med.dosage }})
+        </option>
+      </select>
+    </div>
 
     <div class="form-group">
       <label>Total Quantity</label>
@@ -42,11 +43,11 @@
 
   </div>
 
- <button class="btn-primary add-btn"
-        (click)="addStockItem()"
-        [disabled]="!newStockItem.medicationId || newStockItem.medicationId === 0">
-  + Add Stock
-</button>
+  <button class="btn-primary add-btn"
+          (click)="addStockItem()"
+          [disabled]="newStockItem.medication.id === 0">
+    + Add Stock
+  </button>
 
 </div>
 <!-- SEARCH CARD -->
@@ -155,24 +156,26 @@
 <div class="card">
   <h3>Consume Stock</h3>
 
- <div *ngFor="let item of stockItems" class="consume-row">
+  <div *ngFor="let item of stockItems" class="consume-row">
 
-  <span class="consume-label">
-    {{ item.medication.name }}
-    (Available: {{ item.totalQuantity }})
-  </span>
+    <span class="consume-label">
+      {{ item.medication.name }}
+      (Available: {{ item.totalQuantity }})
+    </span>
 
-  <input type="number" min="1" placeholder="Quantity" #qty>
+    <!-- Seul le champ Quantity reste -->
+    <input type="number" min="1" placeholder="Quantity" #qty>
 
-  <button class="btn-primary"
-          (click)="consumeStock(item, qty.valueAsNumber)"
-          [disabled]="isOutOfStock(item)">
-    Consume
-  </button>
+    <!-- Bouton qui continue de passer reference, même si input n'existe plus -->
+    <button class="btn-primary"
+            (click)="consumeStock(item, qty.valueAsNumber, '')"
+            [disabled]="isOutOfStock(item)">
+      Consume
+    </button>
 
-  <span *ngIf="isOutOfStock(item)" class="danger-text">Out of Stock</span>
+    <span *ngIf="isOutOfStock(item)" class="danger-text">Out of Stock</span>
 
-</div>
+  </div>
 </div>
 
 </div>
