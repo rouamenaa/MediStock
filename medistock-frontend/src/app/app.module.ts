@@ -1,5 +1,4 @@
 
-
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 
@@ -13,6 +12,7 @@ import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 // ❌ supprimer : import { PharmacystockModule } from './features/pharmacystock/pharmacystock.module';
 import { LayoutComponent } from "./core/layout/layout.component";
+
 
 import { HTTP_INTERCEPTORS, HttpClientModule } from '@angular/common/http';
 import { LoginComponent } from './components/login/login.component';

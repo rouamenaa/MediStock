@@ -35,6 +35,7 @@ const routes: Routes = [
   {
 
 
+
     path: 'catalog',
     loadChildren: () => import('./features/medication-catalog/medication-catalog.module').then(m => m.MedicationCatalogModule)
 
@@ -50,7 +51,9 @@ const routes: Routes = [
       .then(m => m.OrderModule)
 
 
+
   }
+
 ]
   },
 
@@ -64,3 +67,4 @@ const routes: Routes = [
 })
 
 export class AppRoutingModule { }
+
