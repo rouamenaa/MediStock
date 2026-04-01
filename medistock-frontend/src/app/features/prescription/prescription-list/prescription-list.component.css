@@ -1,0 +1,104 @@
+/* Container général */
+.page-container {
+  padding: 30px;
+  font-family: 'Inter', sans-serif;
+  background: #f4f7fa;
+  min-height: 100vh;
+}
+.page-header h1 { font-size: 28px; color: #1f2937; margin-bottom: 5px; }
+.page-header p  { color: #6b7280; font-size: 14px; margin-bottom: 20px; }
+
+/* Cards */
+.card {
+  background: #ffffff;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  margin-bottom: 20px;
+}
+
+/* Filtres */
+.filter-bar { display: flex; gap: 15px; flex-wrap: wrap; align-items: flex-end; }
+.form-group { display: flex; flex-direction: column; gap: 5px; flex: 1; min-width: 160px; }
+.form-group.align-end { flex-direction: row; align-items: flex-end; gap: 10px; }
+.form-group label { font-weight: 600; color: #374151; font-size: 13px; }
+.form-group input,
+.form-group select {
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  font-size: 14px;
+  outline: none;
+}
+.form-group input:focus,
+.form-group select:focus { border-color: #22c55e; }
+
+/* Buttons */
+button, .add-btn, .btn-secondary {
+  padding: 8px 15px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 13px;
+  text-decoration: none;
+  display: inline-block;
+}
+.add-btn        { background-color: #22c55e; color: white; }
+.add-btn:hover  { background-color: #16a34a; }
+.btn-success    { background-color: #22c55e; color: white; margin-right: 5px; }
+.btn-success:hover { background-color: #16a34a; }
+.btn-warning    { background-color: #facc15; color: #1f2937; margin-right: 5px; }
+.btn-warning:hover { background-color: #eab308; }
+.btn-danger     { background-color: #ef4444; color: white; margin-right: 5px; }
+.btn-danger:hover  { background-color: #dc2626; }
+.btn-secondary  { background-color: #6b7280; color: white; }
+.btn-secondary:hover { background-color: #4b5563; }
+
+/* Table */
+.table-wrapper { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+th, td { padding: 12px 10px; text-align: left; font-size: 14px; }
+th { background-color: #f3f4f6; font-weight: 600; color: #374151; }
+tr { border-bottom: 1px solid #e5e7eb; transition: background-color 0.15s; }
+tr:hover { background-color: #f9fafb; }
+.empty-row { text-align: center; color: #9ca3af; padding: 30px; }
+.table-footer { margin-top: 10px; color: #9ca3af; font-size: 13px; text-align: right; }
+.expired-row { background-color: #fee2e2; }
+.expired-text { color: #dc2626; font-weight: 600; }
+
+/* RX number */
+.rx-number {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #15803d;
+}
+
+/* Status badges */
+.badge-warning   { background-color: #fef3c7; color: #92400e; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+.badge-success   { background-color: #d1fae5; color: #065f46; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+.badge-secondary { background-color: #f3f4f6; color: #374151; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+.badge-info      { background-color: #dbeafe; color: #1e40af; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+.badge-danger    { background-color: #fee2e2; color: #991b1b; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+.badge-dark      { background-color: #e5e7eb; color: #1f2937; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+
+/* Action buttons */
+.action-buttons { display: flex; gap: 5px; flex-wrap: wrap; align-items: center; }
+.action-buttons button { margin: 0; }
+
+/* Alerts */
+.error-box {
+  background-color: #fee2e2; color: #991b1b;
+  border: 1px solid #fecaca;
+  padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; font-size: 14px;
+}
+.success-box {
+  background-color: #d1fae5; color: #065f46;
+  border: 1px solid #a7f3d0;
+  padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; font-size: 14px;
+}
+.loading-box { text-align: center; padding: 40px; color: #6b7280; font-size: 15px; }

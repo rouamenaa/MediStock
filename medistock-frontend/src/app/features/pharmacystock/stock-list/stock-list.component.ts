@@ -1,30 +1,43 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
 import { StockItemService } from '../../../services/stock-item.service';
 import { MedicationService } from '../../../services/medication.service';
+import { StockBatchService } from '../../../services/stock-batch.service';
 import { StockItem } from '../../../models/stock-item.model';
 import { Medication } from '../../../models/medication.model';
+import { StockBatch } from '../../../models/stock-batch.model';
 
 @Component({
   selector: 'app-stock-list',
   templateUrl: './stock-list.component.html',
   styleUrls: ['./stock-list.component.css']
 })
-export class StockListComponent implements OnInit {
+export class StockListComponent implements OnInit, OnDestroy {
 
   stockItems: StockItem[] = [];
   filteredStockItems: StockItem[] = [];
   medications: Medication[] = [];
   editingItem: StockItem | null = null;
-  errorMessage: string = '';
   searchTerm: string = '';
 
   sortField: string = '';
   sortDirection: 'asc' | 'desc' = 'asc';
 
+  // ✅ Map pour stocker le stock disponible non expiré par item
+  availableStockMap: Map<number, number> = new Map();
+
+  // ✅ Map pour les quantités à consommer (une par ligne)
+  consumeQuantities: { [itemId: number]: number } = {};
+
+  // ✅ Popup state
+  popupMessage: string = '';
+  popupType: 'error' | 'success' = 'error';
+  showPopup: boolean = false;
+  private popupTimer: any;
+
   newStockItem: StockItem = {
     pharmacyId: 1,
-    medicationId: 0,  // <-- utiliser medicationId pour le backend
+    medicationId: 0,
     medication: { id: 0, name: '', dosage: '' },
     totalQuantity: 0,
     reservedQuantity: 0,
@@ -35,20 +48,39 @@ export class StockListComponent implements OnInit {
   constructor(
     private stockItemService: StockItemService,
     private medicationService: MedicationService,
+    private stockBatchService: StockBatchService,
     private router: Router
   ) {}
 
   ngOnInit(): void {
-    this.loadMedications(); // Charger les médicaments avant les stocks
+    this.loadMedications();
+  }
+
+  ngOnDestroy(): void {
+    if (this.popupTimer) clearTimeout(this.popupTimer);
+  }
+
+  // ✅ Affiche une popup (error ou success) avec auto-dismiss après 4s
+  showNotification(message: string, type: 'error' | 'success' = 'error'): void {
+    if (this.popupTimer) clearTimeout(this.popupTimer);
+    this.popupMessage = message;
+    this.popupType = type;
+    this.showPopup = true;
+    this.popupTimer = setTimeout(() => this.closePopup(), 4000);
+  }
+
+  closePopup(): void {
+    this.showPopup = false;
+    this.popupMessage = '';
   }
 
   loadMedications(): void {
     this.medicationService.getAll().subscribe({
       next: meds => {
         this.medications = meds;
-        this.loadStockItems(); // Charger les stocks après les médicaments
+        this.loadStockItems();
       },
-      error: () => this.errorMessage = 'Erreur chargement médicaments'
+      error: () => this.showNotification('Error loading medications')
     });
   }
 
@@ -63,9 +95,33 @@ export class StockListComponent implements OnInit {
           };
         });
         this.filteredStockItems = this.applySorting(this.stockItems);
+
+        this.stockItems.forEach(item => {
+          if (item.id !== undefined) {
+            this.loadAvailableStock(item.id);
+          }
+        });
       },
-      error: () => this.errorMessage = 'Erreur lors du chargement des stocks'
+      error: () => this.showNotification('Error loading stock items')
     });
+  }
+
+  loadAvailableStock(stockItemId: number): void {
+    this.stockBatchService.getBatchesByStockItem(stockItemId).subscribe({
+      next: (batches: StockBatch[]) => {
+        const today = new Date();
+        const available = batches
+          .filter(b => b.expirationDate && new Date(b.expirationDate) >= today)
+          .reduce((sum, b) => sum + b.remainingQuantity, 0);
+        this.availableStockMap.set(stockItemId, available);
+      },
+      error: () => this.availableStockMap.set(stockItemId, 0)
+    });
+  }
+
+  getAvailableStock(item: StockItem): number {
+    if (item.id === undefined) return 0;
+    return (this.availableStockMap.get(item.id) ?? item.totalQuantity) - item.reservedQuantity;
   }
 
   /* ========================
@@ -75,13 +131,11 @@ export class StockListComponent implements OnInit {
   filterStock(): void {
     const term = this.searchTerm.toLowerCase().trim();
     let filtered = this.stockItems;
-
     if (term) {
       filtered = this.stockItems.filter(item =>
         item.medication?.name.toLowerCase().includes(term)
       );
     }
-
     this.filteredStockItems = this.applySorting(filtered);
   }
 
@@ -102,11 +156,9 @@ export class StockListComponent implements OnInit {
 
   applySorting(items: StockItem[]): StockItem[] {
     if (!this.sortField) return items;
-
     return [...items].sort((a, b) => {
       let valueA: any;
       let valueB: any;
-
       switch (this.sortField) {
         case 'name':
           valueA = a.medication?.name.toLowerCase() || '';
@@ -127,7 +179,6 @@ export class StockListComponent implements OnInit {
         default:
           return 0;
       }
-
       if (valueA < valueB) return this.sortDirection === 'asc' ? -1 : 1;
       if (valueA > valueB) return this.sortDirection === 'asc' ? 1 : -1;
       return 0;
@@ -139,39 +190,33 @@ export class StockListComponent implements OnInit {
   ======================== */
 
   addStockItem(): void {
-  if (!this.newStockItem.medicationId || this.newStockItem.medicationId === 0) {
-    this.errorMessage = 'Veuillez sélectionner un médicament';
-    return;
+    if (!this.newStockItem.medicationId || this.newStockItem.medicationId === 0) {
+      this.showNotification('Please select a medication');
+      return;
+    }
+    const selectedMed = this.medications.find(m => m.id === this.newStockItem.medicationId);
+    if (!selectedMed) {
+      this.showNotification('Invalid medication');
+      return;
+    }
+    const stockToCreate = { ...this.newStockItem, medication: selectedMed };
+    this.stockItemService.create(stockToCreate).subscribe({
+      next: () => {
+        this.loadStockItems();
+        this.newStockItem = {
+          pharmacyId: 1,
+          medicationId: 0,
+          medication: { id: 0, name: '', dosage: '' },
+          totalQuantity: 0,
+          reservedQuantity: 0,
+          lowStockThreshold: 5,
+          status: 'AVAILABLE'
+        };
+        this.showNotification('Stock item created successfully', 'success');
+      },
+      error: () => this.showNotification('Error creating stock item')
+    });
   }
-
-  const selectedMed = this.medications.find(m => m.id === this.newStockItem.medicationId);
-  if (!selectedMed) {
-    this.errorMessage = 'Médicament invalide';
-    return;
-  }
-
-  // Construire l'objet complet pour le backend
-  const stockToCreate = {
-    ...this.newStockItem,
-    medication: selectedMed
-  };
-
-  this.stockItemService.create(stockToCreate).subscribe({
-    next: () => {
-      this.loadStockItems();
-      this.newStockItem = {
-        pharmacyId: 1,
-        medicationId: 0,
-        medication: { id: 0, name: '', dosage: '' },
-        totalQuantity: 0,
-        reservedQuantity: 0,
-        lowStockThreshold: 5,
-        status: 'AVAILABLE'
-      };
-    },
-    error: () => this.errorMessage = 'Erreur lors de la création du stock'
-  });
-}
 
   startEdit(item: StockItem): void {
     this.editingItem = { ...item };
@@ -183,36 +228,58 @@ export class StockListComponent implements OnInit {
 
   updateItem(): void {
     if (!this.editingItem || this.editingItem.id === undefined) return;
-
-    this.stockItemService.update(
-      this.editingItem.id,
-      this.editingItem.lowStockThreshold
-    ).subscribe({
+    this.stockItemService.update(this.editingItem.id, this.editingItem.lowStockThreshold).subscribe({
       next: () => {
         this.loadStockItems();
         this.editingItem = null;
+        this.showNotification('Stock item updated successfully', 'success');
       },
-      error: () => this.errorMessage = 'Impossible de mettre à jour ce stock'
+      error: () => this.showNotification('Unable to update this stock item')
     });
   }
 
   deleteItem(item: StockItem): void {
     if (item.id === undefined) return;
-
-    if (confirm(`Voulez-vous supprimer le stock ${item.medication?.name}?`)) {
+    if (confirm(`Delete stock item for ${item.medication?.name}?`)) {
       this.stockItemService.delete(item.id).subscribe({
-        next: () => this.loadStockItems(),
-        error: () => this.errorMessage = 'Impossible de supprimer ce stock'
+        next: () => {
+          this.loadStockItems();
+          this.showNotification('Stock item deleted successfully', 'success');
+        },
+        error: () => this.showNotification('Unable to delete this stock item')
       });
     }
   }
 
   consumeStock(item: StockItem, quantity: number): void {
-    if (item.id === undefined || !quantity || quantity <= 0) return;
-
-    this.stockItemService.consume(item.id, quantity, '').subscribe({
-      next: () => this.loadStockItems(),
-      error: () => this.errorMessage = 'Erreur consommation stock'
+    if (item.id === undefined || !quantity || quantity <= 0) {
+      this.showNotification('Please enter a valid quantity');
+      return;
+    }
+    const available = this.getAvailableStock(item);
+    if (quantity > available) {
+      this.showNotification(
+        `Insufficient stock for "${item.medication?.name}": only ${available} unit(s) available (non-expired)`
+      );
+      return;
+    }
+    this.stockItemService.consume(item.id, quantity, `Manual consumption - ${item.medication?.name}`).subscribe({
+      next: () => {
+        // ✅ Reset la quantité après consommation réussie
+        if (item.id !== undefined) {
+          this.consumeQuantities[item.id] = 0;
+        }
+        this.loadStockItems();
+        this.showNotification(`${quantity} unit(s) consumed from "${item.medication?.name}"`, 'success');
+      },
+      error: (err) => {
+        const backendMessage = err?.error?.message || err?.error || null;
+        this.showNotification(
+          backendMessage
+            ? `Error: ${backendMessage}`
+            : `Error consuming stock for "${item.medication?.name}"`
+        );
+      }
     });
   }
 

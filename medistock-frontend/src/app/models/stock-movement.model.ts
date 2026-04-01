@@ -3,6 +3,6 @@ export interface StockMovement {
   stockItemId: number;
   type: string; 
   quantityChanged: number;
-  timestamp?: string;
+  timestamp: string;
   reference: string;
 }

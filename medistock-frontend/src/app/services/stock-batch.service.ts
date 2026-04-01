@@ -27,7 +27,7 @@ export class StockBatchService {
   );
 }
 
-  delete(batchId: number): Observable<void> {
-    return this.http.delete<void>(`${this.baseUrl}/batches/${batchId}`);
-  }
+  delete(stockItemId: number, batchId: number): Observable<void> {
+  return this.http.delete<void>(`${this.baseUrl}/${stockItemId}/batches/${batchId}`);
+}
 }
