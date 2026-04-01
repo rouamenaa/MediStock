@@ -1,0 +1,97 @@
+<div class="page-container">
+  <div class="page-header">
+    <h1>Catégories</h1>
+  </div>
+
+  <div class="catalog-toolbar">
+    <nav class="catalog-nav">
+      <a routerLink="/catalog/medications" routerLinkActive="active">Médicaments</a>
+      <a routerLink="/catalog/categories" routerLinkActive="active">Catégories</a>
+      <a routerLink="/catalog/active-principles" routerLinkActive="active">Principes actifs</a>
+    </nav>
+    <button
+      *ngIf="!addSectionOpen"
+      type="button"
+      class="btn-primary catalog-add-btn"
+      (click)="openAddSection()">
+      Ajouter
+    </button>
+  </div>
+
+  <div class="error-box" *ngIf="errorMessage">{{ errorMessage }}</div>
+  <div class="success-box" *ngIf="successMessage">{{ successMessage }}</div>
+
+  <div class="card" *ngIf="addSectionOpen">
+    <div class="add-form-header">
+      <h3>Nouvelle catégorie</h3>
+      <button type="button" class="btn-secondary" (click)="closeAddSection()">Fermer</button>
+    </div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Nom *</label>
+        <input type="text" [(ngModel)]="draft.name">
+      </div>
+      <div class="form-group">
+        <label>Description</label>
+        <input type="text" [(ngModel)]="draft.description">
+      </div>
+    </div>
+    <div class="add-form-footer">
+      <button class="btn-primary" type="button" (click)="create()">Créer</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Liste</h3>
+    <p *ngIf="!categories.length" class="category-list-empty">Aucune catégorie à afficher.</p>
+    <div class="category-cards" *ngIf="categories.length">
+      <article class="category-card" *ngFor="let c of categories">
+        <div *ngIf="editing?.id !== c.id" class="category-card-body">
+          <div class="category-card-top">
+            <span class="category-card-id">ID {{ c.id }}</span>
+          </div>
+          <h4 class="category-card-name">{{ c.name }}</h4>
+          <dl class="category-card-dl">
+            <div class="category-card-row">
+              <dt>Description</dt>
+              <dd>{{ c.description || '—' }}</dd>
+            </div>
+          </dl>
+          <div class="category-card-actions">
+            <button class="btn-info" type="button" (click)="startEdit(c)">Modifier</button>
+            <button class="btn-danger" type="button" (click)="requestDeleteCategory(c)">Supprimer</button>
+          </div>
+        </div>
+        <div *ngIf="editing?.id === c.id" class="category-card-body category-card-edit">
+          <div class="category-card-top">
+            <span class="category-card-id">ID {{ editing!.id }}</span>
+          </div>
+          <h4 class="category-card-edit-title">Modifier la catégorie</h4>
+          <div class="form-group">
+            <label>Nom *</label>
+            <input type="text" [(ngModel)]="editing!.name">
+          </div>
+          <div class="form-group">
+            <label>Description</label>
+            <input type="text" [(ngModel)]="editing!.description">
+          </div>
+          <div class="category-card-actions">
+            <button class="btn-primary" type="button" (click)="saveEdit()">Enregistrer</button>
+            <button class="btn-secondary" type="button" (click)="cancelEdit()">Annuler</button>
+          </div>
+        </div>
+      </article>
+    </div>
+  </div>
+
+  <app-catalog-confirm-dialog
+    [open]="categoryPendingDelete !== null"
+    title="Supprimer la catégorie"
+    [message]="categoryDeleteMessage"
+    confirmLabel="Supprimer"
+    cancelLabel="Annuler"
+    [confirmDanger]="true"
+    (confirm)="executeDeleteCategory()"
+    (cancel)="cancelDeleteCategory()">
+  </app-catalog-confirm-dialog>
+</div>

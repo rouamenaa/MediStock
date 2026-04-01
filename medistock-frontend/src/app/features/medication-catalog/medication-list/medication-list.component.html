@@ -1,0 +1,129 @@
+<div class="page-container">
+  <div class="page-header">
+    <h1>Catalogue médicaments</h1>
+  </div>
+
+  <div class="catalog-toolbar">
+    <nav class="catalog-nav">
+      <a routerLink="/catalog/medications" routerLinkActive="active">Médicaments</a>
+      <a routerLink="/catalog/categories" routerLinkActive="active">Catégories</a>
+      <a routerLink="/catalog/active-principles" routerLinkActive="active">Principes actifs</a>
+    </nav>
+    <button
+      *ngIf="!addSectionOpen"
+      type="button"
+      class="btn-primary catalog-add-btn"
+      (click)="openAddSection()">
+      Ajouter
+    </button>
+  </div>
+
+  <div class="error-box" *ngIf="errorMessage">{{ errorMessage }}</div>
+  <div class="success-box" *ngIf="successMessage">{{ successMessage }}</div>
+
+  <div class="card" *ngIf="addSectionOpen">
+    <div class="add-medication-header">
+      <h3>Nouveau médicament</h3>
+      <button type="button" class="btn-secondary" (click)="closeAddSection()">Fermer</button>
+    </div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Nom *</label>
+        <input type="text" [(ngModel)]="newMed.name" placeholder="Nom commercial">
+      </div>
+      <div class="form-group">
+        <label>Principe actif *</label>
+        <select [(ngModel)]="newMed.activePrincipleId">
+          <option [ngValue]="0">— Choisir —</option>
+          <option *ngFor="let p of principles" [ngValue]="p.id">{{ p.name }} ({{ p.code }})</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Forme</label>
+        <input type="text" [(ngModel)]="newMed.form" placeholder="ex. comprimé">
+      </div>
+      <div class="form-group">
+        <label>Dosage</label>
+        <input type="text" [(ngModel)]="newMed.dosage" placeholder="ex. 500 mg">
+      </div>
+      <div class="form-group">
+        <label>Laboratoire</label>
+        <input type="text" [(ngModel)]="newMed.laboratory">
+      </div>
+      <div class="form-group">
+        <label>Code produit</label>
+        <input type="text" [(ngModel)]="newMed.productCode">
+      </div>
+    </div>
+    <div class="add-medication-footer">
+      <button class="btn-primary" type="button" (click)="addMedication()">Enregistrer</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Recherche</h3>
+    <div class="form-row">
+      <div class="form-group" style="flex: 1; min-width: 200px;">
+        <label>Par nom</label>
+        <input type="text" [(ngModel)]="searchName" placeholder="Nom du médicament">
+      </div>
+      <button class="btn-primary" type="button" (click)="loadMedications()">Filtrer</button>
+    </div>
+    <div class="form-row" style="margin-top: 12px;">
+      <div class="form-group" style="flex: 1; min-width: 200px;">
+        <label>Par principe actif (nom ou code DCI)</label>
+        <input type="text" [(ngModel)]="searchDci" placeholder="ex. paracétamol">
+      </div>
+      <button class="btn-info" type="button" (click)="searchByDci()">Rechercher</button>
+      <button class="btn-secondary" type="button" (click)="resetSearch()">Réinitialiser</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Liste</h3>
+    <p *ngIf="!medications.length" class="medication-list-empty">Aucun médicament à afficher.</p>
+    <div class="medication-cards" *ngIf="medications.length">
+      <article class="medication-card" *ngFor="let m of medications">
+        <div class="medication-card-top">
+          <span class="medication-card-id">ID {{ m.id }}</span>
+          <span class="status-badge" [class.on]="m.active" [class.off]="!m.active">
+            {{ m.active ? 'Actif' : 'Inactif' }}
+          </span>
+        </div>
+        <h4 class="medication-card-name">{{ m.name }}</h4>
+        <dl class="medication-card-dl">
+          <div class="medication-card-row">
+            <dt>Forme / dosage</dt>
+            <dd>{{ (m.form || '—') + (m.dosage ? ' · ' + m.dosage : '') }}</dd>
+          </div>
+          <div class="medication-card-row">
+            <dt>Principe actif</dt>
+            <dd>
+              {{ m.activePrincipleName || '—' }}
+              <span *ngIf="m.activePrincipleCode" class="medication-card-muted">({{ m.activePrincipleCode }})</span>
+            </dd>
+          </div>
+          <div class="medication-card-row">
+            <dt>Réf. générique</dt>
+            <dd>{{ m.referenceMedicationName || '—' }}</dd>
+          </div>
+        </dl>
+        <div class="medication-card-actions">
+          <button class="btn-info" type="button" (click)="openDetail(m.id)">Fiche</button>
+          <button class="btn-danger" type="button" (click)="requestDeleteMedication(m)">Supprimer</button>
+        </div>
+      </article>
+    </div>
+  </div>
+
+  <app-catalog-confirm-dialog
+    [open]="medicationPendingDelete !== null"
+    title="Supprimer le médicament"
+    [message]="medicationDeleteMessage"
+    confirmLabel="Supprimer"
+    cancelLabel="Annuler"
+    [confirmDanger]="true"
+    (confirm)="executeDeleteMedication()"
+    (cancel)="cancelDeleteMedication()">
+  </app-catalog-confirm-dialog>
+</div>
