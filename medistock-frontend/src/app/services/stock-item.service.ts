@@ -5,7 +5,7 @@ import { StockItem } from '../models/stock-item.model';
 
 @Injectable({ providedIn: 'root' })
 export class StockItemService {
-  private baseUrl = 'http://localhost:8080/api/stockitems';
+  private baseUrl = 'http://localhost:8081/api/stockitems';
 
   constructor(private http: HttpClient) {}
 

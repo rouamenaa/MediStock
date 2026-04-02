@@ -1,10 +1,11 @@
 .page-container {
-  padding: 40px;
+  padding: 20px;
   background: linear-gradient(135deg, #eef4ff, #f9fcff);
   min-height: 100vh;
   font-family: 'Inter', 'Segoe UI', sans-serif;
+  width: 100%; /* occuper tout l’espace restant */
+  box-sizing: border-box;
 }
-
 /* HEADER */
 .page-header {
   text-align: center;

@@ -1,0 +1,39 @@
+<div class="auth-container">
+    <div class="auth-card">
+        <h2>Create Account 🧾</h2>
+
+        <form [formGroup]="registerForm" (ngSubmit)="onSubmit()">
+
+            <!-- NAME -->
+            <input type="text" placeholder="Name" formControlName="name">
+            <div class="error" *ngIf="(f.name.touched || submitted) && f.name.invalid">
+                <span *ngIf="f.name.errors?.['required']">Name is required</span>
+                <span *ngIf="f.name.errors?.['minlength']">Min 3 characters</span>
+            </div>
+
+            <!-- EMAIL -->
+            <input type="email" placeholder="Email" formControlName="email">
+            <div class="error" *ngIf="(f.email.touched || submitted) && f.email.invalid">
+                <span *ngIf="f.email.errors?.['required']">Email is required</span>
+                <span *ngIf="f.email.errors?.['email']">Invalid email</span>
+            </div>
+
+            <!-- PASSWORD -->
+            <input type="password" placeholder="Password" formControlName="password">
+            <div class="error" *ngIf="(f.password.touched || submitted) && f.password.invalid">
+                <span *ngIf="f.password.errors?.['required']">Password is required</span>
+                <span *ngIf="f.password.errors?.['minlength']">Min 6 characters</span>
+            </div>
+
+            <button type="submit" [disabled]="registerForm.invalid">
+                Register
+            </button>
+
+        </form>
+
+        <p>
+            Already have an account?
+            <a routerLink="/login">Login</a>
+        </p>
+    </div>
+</div>

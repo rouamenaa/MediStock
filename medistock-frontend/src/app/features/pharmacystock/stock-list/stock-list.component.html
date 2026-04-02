@@ -36,6 +36,7 @@
         </select>
       </div>
 
+
       <div class="form-group">
         <label>Total Quantity</label>
         <input type="number" [(ngModel)]="newStockItem.totalQuantity">
@@ -46,12 +47,15 @@
         <input type="number" [(ngModel)]="newStockItem.lowStockThreshold">
       </div>
 
+
     </div>
+
 
     <button class="btn-primary add-btn"
             (click)="addStockItem()"
             [disabled]="!newStockItem.medicationId || newStockItem.medicationId === 0">
       + Add Stock
+
     </button>
   </div>
 
@@ -150,6 +154,7 @@
   <!-- CONSUME STOCK CARD -->
   <div class="card">
     <h3>Consume Stock</h3>
+
 
     <div class="table-wrapper">
       <table>

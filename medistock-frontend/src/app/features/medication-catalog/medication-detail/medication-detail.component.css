@@ -1,0 +1,51 @@
+/* Pied de carte : bouton Mettre à jour aligné à droite (zone type « carré rouge ») */
+.card-footer-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #e8eef5;
+}
+
+.card-footer-actions button {
+  margin: 0;
+}
+
+/* Médicament sans carte référence : même bouton, carte minimale */
+.card-metre-a-jour-fallback {
+  padding-top: 20px;
+  padding-bottom: 20px;
+}
+
+.card-metre-a-jour-fallback .card-footer-actions {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
+/* Pied carte Modifier : Enregistrer à gauche, Fermer l’édition à droite (zone type « carré bleu ») */
+.modifier-footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid #e8eef5;
+}
+
+.modifier-footer button {
+  margin: 0;
+}
+
+@media (max-width: 480px) {
+  .modifier-footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .modifier-footer button {
+    width: 100%;
+  }
+}

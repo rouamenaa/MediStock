@@ -1,51 +1,51 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 
-import { OrderListComponent } from './features/order/order-list/order-list.component';
-import { OrderFormComponent } from './features/order/order-form/order-form.component';
-import { PrescriptionListComponent } from './features/prescription/prescription-list/prescription-list.component';
-import { PrescriptionFormComponent } from './features/prescription/prescription-form/prescription-form.component';
+
+import { LoginComponent } from './components/login/login.component';
+import { AuthGuard } from './guards/auth.guard';
+import { LayoutComponent } from './core/layout/layout.component';
+import { RegisterComponent } from './components/register/register.component';
 
 const routes: Routes = [
+  { path: 'login', component: LoginComponent },
+  { path: 'register', component: RegisterComponent },
 
-  { 
-    path: 'pharmacystock', 
-    loadChildren: () => import('./features/pharmacystock/pharmacystock.module').then(m => m.PharmacystockModule) 
-  },
-  // 👇 Nouvelles routes ajoutées
-  { 
-    path: 'pharmacies', 
-    loadChildren: () => import('./features/pharmacy/pharmacy.module').then(m => m.PharmacyModule) 
-  },
-  { 
-    path: 'staff', 
-    loadChildren: () => import('./features/staff/staff.module').then(m => m.StaffModule) 
-  },
-  // 👇 Ces deux lignes restent identiques
-  { path: '', redirectTo: 'pharmacystock/pharmacystocklist', pathMatch: 'full' },  
-  { path: '**', redirectTo: 'pharmacystock/pharmacystocklist' }  
-
-,
-  // ── Pharmacy Stock (lazy loading existant) ─────────────────────────────────
+  {
+    path: '',
+    component: LayoutComponent,
+    canActivate: [AuthGuard],
+    children: [
   {
     path: 'pharmacystock',
     loadChildren: () => import('./features/pharmacystock/pharmacystock.module')
       .then(m => m.PharmacystockModule)
   },
+  {
+    path: 'pharmacies',
+    loadChildren: () => import('./features/pharmacy/pharmacy.module')
+      .then(m => m.PharmacyModule)
+  },
+  {
+    path: 'staff',
+    loadChildren: () => import('./features/staff/staff.module')
+      .then(m => m.StaffModule)
+  },
+  {
+    path: 'prescriptions',
+    loadChildren: () => import('./features/prescription/prescription.module')
+      .then(m => m.PrescriptionModule)
+  },
+  {
+    path: 'orders',
+    loadChildren: () => import('./features/order/order.module')
+      .then(m => m.OrderModule)
+  }
+]
+  },
 
-  // ── Orders ─────────────────────────────────────────────────────────────────
-  { path: 'orders',     component: OrderListComponent },
-  { path: 'orders/new', component: OrderFormComponent },
-
-  // ── Prescriptions ──────────────────────────────────────────────────────────
-  { path: 'prescriptions',     component: PrescriptionListComponent },
-  { path: 'prescriptions/new', component: PrescriptionFormComponent },
-
-  // ── Default & Fallback ─────────────────────────────────────────────────────
-  { path: '', redirectTo: 'pharmacystock/pharmacystocklist', pathMatch: 'full' },
-  { path: '**', redirectTo: 'pharmacystock/pharmacystocklist' }
-
-
+  { path: '', redirectTo: 'login', pathMatch: 'full' },
+  { path: '**', redirectTo: 'login' }
 ];
 
 @NgModule({
@@ -53,7 +53,12 @@ const routes: Routes = [
   exports: [RouterModule]
 })
 
-
-
 export class AppRoutingModule { }
+
+
+
+
+
+
+
 
