@@ -10,6 +10,7 @@ export class AuthGuard implements CanActivate {
 
   constructor(
 
+
     @Inject(KeycloakService) private keycloak: KeycloakService,  // ← ajouter @Inject
 
     @Inject(PLATFORM_ID) private platformId: Object

@@ -21,5 +21,4 @@ export class LoginComponent implements OnInit {
       redirectUri: window.location.origin
     });
   }
-
 }

@@ -33,6 +33,13 @@ const routes: Routes = [
       .then(m => m.StaffModule)
   },
   {
+
+
+    path: 'catalog',
+    loadChildren: () => import('./features/medication-catalog/medication-catalog.module').then(m => m.MedicationCatalogModule)
+
+  },
+  {
     path: 'prescriptions',
     loadChildren: () => import('./features/prescription/prescription.module')
       .then(m => m.PrescriptionModule)
@@ -41,6 +48,7 @@ const routes: Routes = [
     path: 'orders',
     loadChildren: () => import('./features/order/order.module')
       .then(m => m.OrderModule)
+
 
   }
 ]
