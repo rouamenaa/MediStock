@@ -25,6 +25,7 @@ export class PrescriptionListComponent implements OnInit {
   ngOnInit(): void {
     this.loadPrescriptions();
   }
+  
 
   loadPrescriptions(): void {
     this.loading = true;
