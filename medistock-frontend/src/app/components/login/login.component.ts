@@ -1,5 +1,6 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, Inject, OnInit, PLATFORM_ID } from '@angular/core';
 import { KeycloakService } from 'keycloak-angular';
+import { isPlatformBrowser } from '@angular/common';
 
 @Component({
   selector: 'app-login',
@@ -7,10 +8,15 @@ import { KeycloakService } from 'keycloak-angular';
 })
 export class LoginComponent implements OnInit {
 
-  constructor(private keycloak: KeycloakService) {}
+  constructor(
+    @Inject(KeycloakService) private keycloak: KeycloakService,
+    @Inject(PLATFORM_ID) private platformId: Object
+  ) {}
 
   async ngOnInit() {
-    await this.keycloak.login();
+    if (!isPlatformBrowser(this.platformId)) return; 
+    await this.keycloak.login({
+      redirectUri: window.location.origin
+    });
   }
-
 }

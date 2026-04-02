@@ -8,30 +8,44 @@ import { LayoutComponent } from './core/layout/layout.component';
 import { RegisterComponent } from './components/register/register.component';
 
 const routes: Routes = [
-
-  // ✅ LOGIN (NO LAYOUT)  
   { path: 'login', component: LoginComponent },
   { path: 'register', component: RegisterComponent },
 
-  // 🔐 PROTECTED + WITH LAYOUT
   {
     path: '',
-    component: LayoutComponent,   // 👈 MOVE LAYOUT HERE
+    component: LayoutComponent,
     canActivate: [AuthGuard],
     children: [
-      {
-        path: 'pharmacystock',
-        loadChildren: () => import('./features/pharmacystock/pharmacystock.module')
-          .then(m => m.PharmacystockModule)
-      }
-    ]
+  {
+    path: 'pharmacystock',
+    loadChildren: () => import('./features/pharmacystock/pharmacystock.module')
+      .then(m => m.PharmacystockModule)
+  },
+  {
+    path: 'pharmacies',
+    loadChildren: () => import('./features/pharmacy/pharmacy.module')
+      .then(m => m.PharmacyModule)
+  },
+  {
+    path: 'staff',
+    loadChildren: () => import('./features/staff/staff.module')
+      .then(m => m.StaffModule)
+  },
+  {
+    path: 'prescriptions',
+    loadChildren: () => import('./features/prescription/prescription.module')
+      .then(m => m.PrescriptionModule)
+  },
+  {
+    path: 'orders',
+    loadChildren: () => import('./features/order/order.module')
+      .then(m => m.OrderModule)
+  }
+]
   },
 
-  // DEFAULT
   { path: '', redirectTo: 'login', pathMatch: 'full' },
-
   { path: '**', redirectTo: 'login' }
-
 ];
 
 @NgModule({

@@ -9,18 +9,15 @@ import { KeycloakService } from 'keycloak-angular';
 export class AuthGuard implements CanActivate {
 
   constructor(
-    private keycloak: KeycloakService,
+    @Inject(KeycloakService) private keycloak: KeycloakService,  // ← ajouter @Inject
     @Inject(PLATFORM_ID) private platformId: Object
   ) {}
 
   async canActivate(): Promise<boolean> {
-
-    // ✅ SSR → skip auth
     if (!isPlatformBrowser(this.platformId)) {
       return true;
     }
 
-    // ✅ Browser
     const isLoggedIn = await this.keycloak.isLoggedIn();
 
     if (!isLoggedIn) {
