@@ -13,7 +13,7 @@ public class AuthController {
 
     private final AuthService authService;
 
-    // ✅ CONSTRUCTEUR (IMPORTANT)
+
     public AuthController(AuthService authService) {
         this.authService = authService;
     }

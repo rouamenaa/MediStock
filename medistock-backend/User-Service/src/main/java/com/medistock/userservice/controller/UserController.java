@@ -13,7 +13,6 @@ public class UserController {
 
     private final UserService userService;
 
-    // ✅ CONSTRUCTEUR (IMPORTANT)
     public UserController(UserService userService) {
         this.userService = userService;
     }
