@@ -1,10 +1,8 @@
-<<<<<<< HEAD
+
 
 import { Inject, Injectable } from '@angular/core';
 
-=======
-import { Inject, Injectable } from '@angular/core';
->>>>>>> cc7a731 (fixing problems)
+
 import { HttpEvent, HttpHandler, HttpInterceptor, HttpRequest } from '@angular/common/http';
 import { Observable, from } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
