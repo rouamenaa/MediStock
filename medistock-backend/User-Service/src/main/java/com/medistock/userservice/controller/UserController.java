@@ -17,8 +17,14 @@ public class UserController {
 
     private final UserRepository repo;
 
+
     public UserController(UserRepository repo) {
         this.repo = repo;
+
+
+   // public UserController(UserService userService) {
+      //  this.userService = userService;
+
     }
 
     @PostMapping("/sync")

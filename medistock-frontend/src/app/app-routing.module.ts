@@ -8,6 +8,7 @@ import { LayoutComponent } from './core/layout/layout.component';
 import { RegisterComponent } from './components/register/register.component';
 
 const routes: Routes = [
+
   { path: 'login', component: LoginComponent },
   { path: 'register', component: RegisterComponent },
 
@@ -16,11 +17,13 @@ const routes: Routes = [
     component: LayoutComponent,
     canActivate: [AuthGuard],
     children: [
+
   {
     path: 'pharmacystock',
-    loadChildren: () => import('./features/pharmacystock/pharmacystock.module')
-      .then(m => m.PharmacystockModule)
+    loadChildren: () =>
+      import('./features/pharmacystock/pharmacystock.module').then(m => m.PharmacystockModule)
   },
+
   {
     path: 'pharmacies',
     loadChildren: () => import('./features/pharmacy/pharmacy.module')
@@ -32,6 +35,15 @@ const routes: Routes = [
       .then(m => m.StaffModule)
   },
   {
+
+
+
+    path: 'catalog',
+
+    loadChildren: () => import('./features/medication-catalog/medication-catalog.module').then(m => m.MedicationCatalogModule)
+
+  },
+  {
     path: 'prescriptions',
     loadChildren: () => import('./features/prescription/prescription.module')
       .then(m => m.PrescriptionModule)
@@ -40,12 +52,18 @@ const routes: Routes = [
     path: 'orders',
     loadChildren: () => import('./features/order/order.module')
       .then(m => m.OrderModule)
+
+
+
   }
+
+
 ]
   },
 
   { path: '', redirectTo: 'login', pathMatch: 'full' },
   { path: '**', redirectTo: 'login' }
+
 ];
 
 @NgModule({
@@ -54,11 +72,5 @@ const routes: Routes = [
 })
 
 export class AppRoutingModule { }
-
-
-
-
-
-
 
 
