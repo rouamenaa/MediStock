@@ -9,12 +9,10 @@ import org.springframework.stereotype.Service;
 public class AuthService {
 
     private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
 
 
-    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public AuthService(UserRepository userRepository) {
         this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
     }
 
     public User register(User user) {
@@ -22,8 +20,6 @@ public class AuthService {
         if (userRepository.findByEmail(user.getEmail()).isPresent()) {
             throw new RuntimeException("Email already exists");
         }
-
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
         user.setRole("USER");
 
         return userRepository.save(user);
