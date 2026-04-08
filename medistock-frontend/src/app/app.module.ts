@@ -1,5 +1,5 @@
 
-import { NgModule } from '@angular/core';
+
 import { RouterModule, Routes } from '@angular/router';
 
 import { NgModule, APP_INITIALIZER, PLATFORM_ID } from '@angular/core';
@@ -84,4 +84,4 @@ function initializeKeycloak(keycloak: KeycloakService, platformId: Object) {
 
 })
 
-export class AppRoutingModule { }
+export class AppModule { }
