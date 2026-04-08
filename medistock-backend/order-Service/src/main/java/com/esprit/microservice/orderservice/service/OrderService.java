@@ -4,8 +4,9 @@ import com.esprit.microservice.orderservice.entity.Order;
 import com.esprit.microservice.orderservice.entity.OrderItem;
 import com.esprit.microservice.orderservice.entity.OrderStatus;
 import com.esprit.microservice.orderservice.repository.OrderRepository;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,26 +16,26 @@ import java.util.List;
 import java.util.UUID;
 
 @Service
-@RequiredArgsConstructor
-@Slf4j
 @Transactional
 public class OrderService {
 
-    private final OrderRepository orderRepository;
+    // ✅ Logger manuel (remplace @Slf4j)
+    private static final Logger log = LoggerFactory.getLogger(OrderService.class);
+
+    // ✅ @Autowired (remplace @RequiredArgsConstructor + final)
+    @Autowired
+    private OrderRepository orderRepository;
 
     public Order createOrder(Order order) {
         order.setOrderNumber(generateOrderNumber());
         order.setStatus(OrderStatus.PENDING);
 
         if (order.getItems() != null && !order.getItems().isEmpty()) {
-
-            // ✅ Fix : extraire les items, vider la liste, puis réassocier proprement
             List<OrderItem> items = new ArrayList<>(order.getItems());
             order.getItems().clear();
 
             BigDecimal total = BigDecimal.ZERO;
             for (OrderItem item : items) {
-                // Calculer le sous-total
                 if (item.getUnitPrice() != null && item.getQuantity() != null) {
                     BigDecimal subTotal = item.getUnitPrice()
                             .multiply(BigDecimal.valueOf(item.getQuantity()));
@@ -43,7 +44,6 @@ public class OrderService {
                 } else {
                     item.setTotalPrice(BigDecimal.ZERO);
                 }
-                // ✅ addItem associe item.order = order ET ajoute à la liste
                 order.addItem(item);
             }
             order.setTotalAmount(total);

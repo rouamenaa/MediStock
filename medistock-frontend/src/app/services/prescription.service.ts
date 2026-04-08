@@ -8,7 +8,7 @@ import { Prescription, PrescriptionStatus } from '../models/prescription.model';
 })
 export class PrescriptionService {
 
-  private apiUrl = 'http://localhost:8084/api/prescriptions';
+  private apiUrl = 'http://localhost:8090/orders/api/prescriptions';
 
   constructor(private http: HttpClient) {}
 
