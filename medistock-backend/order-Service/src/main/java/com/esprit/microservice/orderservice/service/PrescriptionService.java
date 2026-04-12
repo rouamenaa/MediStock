@@ -4,8 +4,9 @@ import com.esprit.microservice.orderservice.entity.Prescription;
 import com.esprit.microservice.orderservice.entity.PrescriptionItem;
 import com.esprit.microservice.orderservice.entity.PrescriptionStatus;
 import com.esprit.microservice.orderservice.repository.PrescriptionRepository;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,12 +17,13 @@ import java.util.List;
 import java.util.UUID;
 
 @Service
-@RequiredArgsConstructor
-@Slf4j
 @Transactional
 public class PrescriptionService {
 
-    private final PrescriptionRepository prescriptionRepository;
+    private static final Logger log = LoggerFactory.getLogger(PrescriptionService.class);
+
+    @Autowired
+    private PrescriptionRepository prescriptionRepository;
 
     public Prescription createPrescription(Prescription prescription) {
         prescription.setPrescriptionNumber(generatePrescriptionNumber());

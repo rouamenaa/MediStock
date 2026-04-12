@@ -1,34 +1,80 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { Order, OrderItem } from '../../../models/order.model';
 import { OrderService } from '../../../services/order.service';
+import { CatalogApiService } from '../../../services/catalog-api.service';
+import { MedicationCatalog } from '../../../models/catalog-medication.model';
+import { Pharmacy, PharmacyService } from '../../pharmacy/services/pharmacy.service';
 
 @Component({
   selector: 'app-order-form',
   templateUrl: './order-form.component.html',
   styleUrls: ['./order-form.component.css']
 })
-export class OrderFormComponent {
+export class OrderFormComponent implements OnInit {
 
   order: Order = {
     patientId: '',
     patientName: '',
-    pharmacyId: 1,   // ✅ valeur par défaut 1 (pas 0)
+    pharmacyId: 0,
     notes: '',
     items: []
   };
 
+  medications: MedicationCatalog[] = [];
+  pharmacies: Pharmacy[] = [];
   loading = false;
+  loadingLookups = false;
   errorMessage = '';
   successMessage = '';
 
-  constructor(private orderService: OrderService, private router: Router) {
+  constructor(
+    private orderService: OrderService,
+    private catalogApiService: CatalogApiService,
+    private pharmacyService: PharmacyService,
+    private router: Router
+  ) {
     this.addItem();
+  }
+
+  ngOnInit(): void {
+    this.loadLookups();
+  }
+
+  loadLookups(): void {
+    this.loadingLookups = true;
+    this.errorMessage = '';
+    this.pharmacyService.getAll().subscribe({
+      next: pharmacies => {
+        this.pharmacies = pharmacies;
+        if (this.pharmacies.length > 0 && !this.order.pharmacyId) {
+          this.order.pharmacyId = this.pharmacies[0].id ?? 0;
+        }
+        this.loadMedications();
+      },
+      error: () => {
+        this.loadingLookups = false;
+        this.errorMessage = 'Impossible de charger les pharmacies.';
+      }
+    });
+  }
+
+  loadMedications(): void {
+    this.catalogApiService.listMedications().subscribe({
+      next: meds => {
+        this.medications = meds.filter(m => m.id !== undefined);
+        this.loadingLookups = false;
+      },
+      error: () => {
+        this.loadingLookups = false;
+        this.errorMessage = 'Impossible de charger les médicaments.';
+      }
+    });
   }
 
   addItem(): void {
     this.order.items.push({
-      medicationId: 1,       // ✅ valeur par défaut 1 (pas 0)
+      medicationId: 0,
       medicationName: '',
       medicationCode: '',
       quantity: 1,
@@ -44,6 +90,20 @@ export class OrderFormComponent {
     }
   }
 
+  onMedicationChange(item: OrderItem): void {
+    const selected = this.medications.find(m => m.id === Number(item.medicationId));
+    if (!selected || selected.id === undefined) {
+      item.medicationName = '';
+      item.medicationCode = '';
+      item.dosage = '';
+      return;
+    }
+    item.medicationId = selected.id;
+    item.medicationName = selected.name;
+    item.medicationCode = selected.productCode || '';
+    item.dosage = selected.dosage || '';
+  }
+
   calculateTotal(): number {
     return this.order.items.reduce((sum, item) =>
       sum + (item.unitPrice || 0) * (item.quantity || 0), 0);
@@ -54,13 +114,12 @@ export class OrderFormComponent {
     this.loading = true;
     this.errorMessage = '';
 
-    // ✅ Nettoyer et convertir les types avant envoi
     const orderToSend: Order = {
       ...this.order,
       pharmacyId: Number(this.order.pharmacyId),
       items: this.order.items.map(item => ({
         ...item,
-        medicationId: Number(item.medicationId) || 1,
+        medicationId: Number(item.medicationId) || 0,
         quantity:     Number(item.quantity)     || 1,
         unitPrice:    Number(item.unitPrice)    || 0,
       }))
@@ -84,7 +143,7 @@ export class OrderFormComponent {
       this.errorMessage = 'Veuillez remplir tous les champs obligatoires.';
       return false;
     }
-    if (this.order.items.some(i => !i.medicationName || i.quantity < 1)) {
+    if (this.order.items.some(i => !i.medicationId || !i.medicationName || i.quantity < 1)) {
       this.errorMessage = 'Veuillez remplir correctement tous les médicaments.';
       return false;
     }

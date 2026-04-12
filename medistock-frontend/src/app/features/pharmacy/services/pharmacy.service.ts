@@ -11,7 +11,7 @@ export interface Pharmacy {
 
 @Injectable({ providedIn: 'root' })
 export class PharmacyService {
-  private apiUrl = 'http://localhost:8083/api/pharmacies';
+  private apiUrl = 'http://localhost:8090/api/pharmacies';
 
   constructor(private http: HttpClient) {}
 

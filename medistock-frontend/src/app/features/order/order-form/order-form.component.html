@@ -27,9 +27,13 @@
                  placeholder="Ex: Mohamed Ali" required>
         </div>
         <div class="form-group">
-          <label>ID Pharmacie *</label>
-          <input type="number" [(ngModel)]="order.pharmacyId" name="pharmacyId"
-                 min="1" required>
+          <label>Pharmacie *</label>
+          <select [(ngModel)]="order.pharmacyId" name="pharmacyId" required>
+            <option [ngValue]="0">-- Sélectionner --</option>
+            <option *ngFor="let pharmacy of pharmacies" [ngValue]="pharmacy.id">
+              {{ pharmacy.name }} (ID: {{ pharmacy.id }})
+            </option>
+          </select>
         </div>
       </div>
       <div class="form-group full-width">
@@ -57,17 +61,21 @@
 
         <div class="form-grid">
           <div class="form-group">
-            <label>Nom *</label>
-            <input type="text" [(ngModel)]="item.medicationName" [name]="'medName'+i"
-                   placeholder="Paracetamol 500mg" required>
+            <label>Médicament *</label>
+            <select
+              [(ngModel)]="item.medicationId"
+              [name]="'medId'+i"
+              (ngModelChange)="onMedicationChange(item)"
+              required>
+              <option [ngValue]="0">-- Sélectionner --</option>
+              <option *ngFor="let med of medications" [ngValue]="med.id">
+                {{ med.name }} (ID: {{ med.id }})
+              </option>
+            </select>
           </div>
           <div class="form-group">
             <label>Code</label>
-            <input type="text" [(ngModel)]="item.medicationCode" [name]="'medCode'+i">
-          </div>
-          <div class="form-group">
-            <label>ID Médicament</label>
-            <input type="number" [(ngModel)]="item.medicationId" [name]="'medId'+i" min="1">
+            <input type="text" [(ngModel)]="item.medicationCode" [name]="'medCode'+i" readonly>
           </div>
           <div class="form-group">
             <label>Quantité *</label>
@@ -82,7 +90,7 @@
           <div class="form-group">
             <label>Dosage</label>
             <input type="text" [(ngModel)]="item.dosage" [name]="'dosage'+i"
-                   placeholder="500mg">
+                   placeholder="500mg" readonly>
           </div>
           <div class="form-group">
             <label>Instructions</label>
@@ -107,7 +115,7 @@
       </div>
       <div class="btn-row">
         <a href="/orders" class="btn-secondary">✕ Annuler</a>
-        <button type="submit" class="btn-success" [disabled]="loading">
+        <button type="submit" class="btn-success" [disabled]="loading || loadingLookups">
           {{ loading ? 'Création...' : '✔ Créer la Commande' }}
         </button>
       </div>

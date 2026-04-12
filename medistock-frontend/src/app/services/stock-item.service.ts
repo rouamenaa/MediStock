@@ -5,7 +5,7 @@ import { StockItem } from '../models/stock-item.model';
 
 @Injectable({ providedIn: 'root' })
 export class StockItemService {
-  private baseUrl = 'http://localhost:8081/api/stockitems';
+private baseUrl = 'http://localhost:8090/stock/api/stockitems';
 
   constructor(private http: HttpClient) {}
 
@@ -18,7 +18,15 @@ export class StockItemService {
   }
 
   create(item: StockItem): Observable<StockItem> {
-    return this.http.post<StockItem>(this.baseUrl, item);
+    const payload = {
+      pharmacyId: item.pharmacyId,
+      medicationId: item.medicationId,
+      totalQuantity: item.totalQuantity,
+      reservedQuantity: item.reservedQuantity,
+      lowStockThreshold: item.lowStockThreshold,
+      status: item.status
+    };
+    return this.http.post<StockItem>(this.baseUrl, payload);
   }
 
   update(id: number, lowStockThreshold: number): Observable<StockItem> {

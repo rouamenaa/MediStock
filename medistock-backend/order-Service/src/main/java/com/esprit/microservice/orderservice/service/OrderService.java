@@ -1,13 +1,23 @@
 package com.esprit.microservice.orderservice.service;
 
+import com.esprit.microservice.orderservice.client.MedicationCatalogClient;
+import com.esprit.microservice.orderservice.client.PharmacyManagementClient;
+import com.esprit.microservice.orderservice.dto.MedicationCatalogDto;
+import com.esprit.microservice.orderservice.dto.OrderCreatedEventDto;
+import com.esprit.microservice.orderservice.dto.OrderLineEventDto;
 import com.esprit.microservice.orderservice.entity.Order;
 import com.esprit.microservice.orderservice.entity.OrderItem;
 import com.esprit.microservice.orderservice.entity.OrderStatus;
+import feign.FeignException;
+import com.esprit.microservice.orderservice.messaging.OrderCreatedProducer;
 import com.esprit.microservice.orderservice.repository.OrderRepository;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -15,26 +25,36 @@ import java.util.List;
 import java.util.UUID;
 
 @Service
-@RequiredArgsConstructor
-@Slf4j
 @Transactional
 public class OrderService {
 
-    private final OrderRepository orderRepository;
+    // ✅ Logger manuel (remplace @Slf4j)
+    private static final Logger log = LoggerFactory.getLogger(OrderService.class);
+
+    // ✅ @Autowired (remplace @RequiredArgsConstructor + final)
+    @Autowired
+    private OrderRepository orderRepository;
+    @Autowired
+    private OrderCreatedProducer orderCreatedProducer;
+    @Autowired
+    private MedicationCatalogClient medicationCatalogClient;
+    @Autowired
+    private PharmacyManagementClient pharmacyManagementClient;
 
     public Order createOrder(Order order) {
+        validatePharmacy(order.getPharmacyId());
         order.setOrderNumber(generateOrderNumber());
         order.setStatus(OrderStatus.PENDING);
 
         if (order.getItems() != null && !order.getItems().isEmpty()) {
-
-            // ✅ Fix : extraire les items, vider la liste, puis réassocier proprement
             List<OrderItem> items = new ArrayList<>(order.getItems());
             order.getItems().clear();
 
             BigDecimal total = BigDecimal.ZERO;
             for (OrderItem item : items) {
-                // Calculer le sous-total
+                MedicationCatalogDto medication = validateAndGetMedication(item);
+                item.setMedicationName(medication.getName());
+                item.setMedicationCode(medication.getProductCode());
                 if (item.getUnitPrice() != null && item.getQuantity() != null) {
                     BigDecimal subTotal = item.getUnitPrice()
                             .multiply(BigDecimal.valueOf(item.getQuantity()));
@@ -43,7 +63,6 @@ public class OrderService {
                 } else {
                     item.setTotalPrice(BigDecimal.ZERO);
                 }
-                // ✅ addItem associe item.order = order ET ajoute à la liste
                 order.addItem(item);
             }
             order.setTotalAmount(total);
@@ -52,6 +71,7 @@ public class OrderService {
         }
 
         Order saved = orderRepository.save(order);
+        orderCreatedProducer.publish(toOrderCreatedEvent(saved));
         log.info("Commande créée : {}", saved.getOrderNumber());
         return saved;
     }
@@ -122,16 +142,69 @@ public class OrderService {
 
     private void validateTransition(OrderStatus current, OrderStatus next) {
         boolean valid = switch (current) {
-            case PENDING    -> next == OrderStatus.CONFIRMED
+            case PENDING -> next == OrderStatus.CONFIRMED
                     || next == OrderStatus.CANCELLED
                     || next == OrderStatus.REJECTED;
-            case CONFIRMED  -> next == OrderStatus.PROCESSING || next == OrderStatus.CANCELLED;
-            case PROCESSING -> next == OrderStatus.READY      || next == OrderStatus.CANCELLED;
-            case READY      -> next == OrderStatus.DELIVERED  || next == OrderStatus.CANCELLED;
-            default         -> false;
+            case CONFIRMED -> next == OrderStatus.PROCESSING || next == OrderStatus.CANCELLED;
+            case PROCESSING -> next == OrderStatus.READY || next == OrderStatus.CANCELLED;
+            case READY -> next == OrderStatus.DELIVERED || next == OrderStatus.CANCELLED;
+            default -> false;
         };
         if (!valid) {
             throw new RuntimeException("Transition invalide : " + current + " → " + next);
         }
+    }
+
+    private void validatePharmacy(Long pharmacyId) {
+        if (pharmacyId == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "pharmacyId is required");
+        }
+        try {
+            pharmacyManagementClient.getPharmacyById(pharmacyId);
+        } catch (FeignException.NotFound ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unknown pharmacyId: " + pharmacyId);
+        }
+    }
+
+    private MedicationCatalogDto validateAndGetMedication(OrderItem item) {
+        if (item == null || item.getMedicationId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "medicationId is required");
+        }
+        if (item.getQuantity() == null || item.getQuantity() <= 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Item quantity must be greater than zero");
+        }
+        try {
+            MedicationCatalogDto medication = medicationCatalogClient.getMedicationById(item.getMedicationId());
+            if (medication == null || medication.getId() == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "Unknown medicationId: " + item.getMedicationId());
+            }
+            return medication;
+        } catch (FeignException.NotFound ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Unknown medicationId: " + item.getMedicationId());
+        }
+    }
+
+    private OrderCreatedEventDto toOrderCreatedEvent(Order order) {
+        OrderCreatedEventDto event = new OrderCreatedEventDto();
+        event.setOrderId(order.getId());
+        event.setOrderNumber(order.getOrderNumber());
+        event.setPharmacyId(order.getPharmacyId());
+        List<OrderItem> orderItems = order.getItems();
+        if (orderItems == null || orderItems.isEmpty()) {
+            event.setItems(new OrderLineEventDto[0]);
+            return event;
+        }
+        OrderLineEventDto[] lines = new OrderLineEventDto[orderItems.size()];
+        for (int i = 0; i < orderItems.size(); i++) {
+            OrderItem item = orderItems.get(i);
+            OrderLineEventDto line = new OrderLineEventDto();
+            line.setMedicationId(item.getMedicationId());
+            line.setQuantity(item.getQuantity() == null ? 0 : item.getQuantity());
+            lines[i] = line;
+        }
+        event.setItems(lines);
+        return event;
     }
 }
