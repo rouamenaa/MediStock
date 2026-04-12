@@ -12,7 +12,7 @@ export interface Staff {
 
 @Injectable({ providedIn: 'root' })
 export class StaffService {
-  private apiUrl = 'http://localhost:8083/api/staff';
+  private apiUrl = 'http://localhost:8090/api/staff';
 
   constructor(private http: HttpClient) {}
 
