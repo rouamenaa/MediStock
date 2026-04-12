@@ -5,7 +5,7 @@ import { MedicationCatalog } from '../models/catalog-medication.model';
 import { CatalogCategory } from '../models/catalog-category.model';
 import { CatalogActivePrinciple } from '../models/catalog-active-principle.model';
 
-const CATALOG_BASE = 'http://localhost:8081/api/catalog';
+const CATALOG_BASE = 'http://localhost:8090/api/catalog';
 
 @Injectable({ providedIn: 'root' })
 export class CatalogApiService {
