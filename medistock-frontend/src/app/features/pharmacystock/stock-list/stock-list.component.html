@@ -27,6 +27,16 @@
     <div class="form-grid">
 
       <div class="form-group">
+        <label>Pharmacy</label>
+        <select [(ngModel)]="newStockItem.pharmacyId">
+          <option [ngValue]="0">-- Select Pharmacy --</option>
+          <option *ngFor="let pharmacy of pharmacies" [ngValue]="pharmacy.id">
+            {{ pharmacy.name }} (ID: {{ pharmacy.id }})
+          </option>
+        </select>
+      </div>
+
+      <div class="form-group">
         <label>Medication</label>
         <select [(ngModel)]="newStockItem.medicationId">
           <option [ngValue]="0">-- Select Medication --</option>
