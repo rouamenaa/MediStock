@@ -2,6 +2,7 @@ package com.medistock.catalog.service;
 
 import com.medistock.catalog.domain.ActivePrinciple;
 import com.medistock.catalog.dto.ActivePrincipleDto;
+import com.medistock.catalog.messaging.CatalogRabbitEventEmitter;
 import com.medistock.catalog.repository.ActivePrincipleRepository;
 import com.medistock.catalog.repository.MedicationRepository;
 import org.springframework.stereotype.Service;
@@ -15,10 +16,14 @@ public class ActivePrincipleService {
 
     private final ActivePrincipleRepository repository;
     private final MedicationRepository medicationRepository;
+    private final CatalogRabbitEventEmitter catalogEvents;
 
-    public ActivePrincipleService(ActivePrincipleRepository repository, MedicationRepository medicationRepository) {
+    public ActivePrincipleService(ActivePrincipleRepository repository,
+                                  MedicationRepository medicationRepository,
+                                  CatalogRabbitEventEmitter catalogEvents) {
         this.repository = repository;
         this.medicationRepository = medicationRepository;
+        this.catalogEvents = catalogEvents;
     }
 
     @Transactional(readOnly = true)
@@ -47,7 +52,9 @@ public class ActivePrincipleService {
         entity.setName(dto.getName());
         entity.setDescription(dto.getDescription());
         entity = repository.save(entity);
-        return toDto(entity);
+        ActivePrincipleDto created = toDto(entity);
+        catalogEvents.activePrincipleCreated(created);
+        return created;
     }
 
     @Transactional
@@ -60,7 +67,9 @@ public class ActivePrincipleService {
             entity.setCode(dto.getCode());
         }
         entity = repository.save(entity);
-        return toDto(entity);
+        ActivePrincipleDto updated = toDto(entity);
+        catalogEvents.activePrincipleUpdated(updated);
+        return updated;
     }
 
     @Transactional
@@ -71,6 +80,7 @@ public class ActivePrincipleService {
         }
         ActivePrinciple entity = repository.findById(id).orElseThrow(() -> new ResourceNotFoundException("ActivePrinciple", id));
         repository.delete(entity);
+        catalogEvents.activePrincipleDeleted(id);
     }
 
     private ActivePrincipleDto toDto(ActivePrinciple e) {
