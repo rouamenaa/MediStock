@@ -27,6 +27,7 @@ public class StockItemService {
     private final StockBatchRepository stockBatchRepository;
     private final StockMovementRepository stockMovementRepository;
     private final LowStockAlertProducer lowStockAlertProducer;
+    private final DocumentCatalogPublisher documentCatalogPublisher;
     private final MedicationCatalogClient medicationCatalogClient;
     private final PharmacyManagementClient pharmacyManagementClient;
 
@@ -34,12 +35,14 @@ public class StockItemService {
             StockBatchRepository stockBatchRepository,
             StockMovementRepository stockMovementRepository,
             LowStockAlertProducer lowStockAlertProducer,
+            DocumentCatalogPublisher documentCatalogPublisher,
             MedicationCatalogClient medicationCatalogClient,
             PharmacyManagementClient pharmacyManagementClient) {
         this.stockItemRepository = stockItemRepository;
         this.stockBatchRepository = stockBatchRepository;
         this.stockMovementRepository = stockMovementRepository;
         this.lowStockAlertProducer = lowStockAlertProducer;
+        this.documentCatalogPublisher = documentCatalogPublisher;
         this.medicationCatalogClient = medicationCatalogClient;
         this.pharmacyManagementClient = pharmacyManagementClient;
     }
@@ -183,6 +186,7 @@ public class StockItemService {
             event.setRemainingQuantity(available);
             event.setThreshold(item.getLowStockThreshold());
             lowStockAlertProducer.publish(event);
+            documentCatalogPublisher.publishLowStockReport(event);
         }
     }
 }

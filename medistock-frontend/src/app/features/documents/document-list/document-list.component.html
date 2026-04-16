@@ -1,0 +1,156 @@
+<div class="page-container">
+  <div class="page-header">
+    <h2>Liste des documents</h2>
+    <p>Recherche et gestion des documents centralisés</p>
+  </div>
+
+  <div class="message success" *ngIf="successMessage">{{ successMessage }}</div>
+  <div class="message error" *ngIf="errorMessage">{{ errorMessage }}</div>
+
+  <div class="kpi-grid" *ngIf="metrics">
+    <div class="kpi-card">
+      <div class="kpi-label">Total documents</div>
+      <div class="kpi-value">{{ metrics.totalDocuments }}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Types documents</div>
+      <div class="kpi-value">{{ metrics.byDocumentType.length }}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Services sources</div>
+      <div class="kpi-value">{{ metrics.bySourceService.length }}</div>
+    </div>
+  </div>
+
+  <div class="card" *ngIf="metrics">
+    <h3>Top entités les plus documentées</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Entity Type</th>
+          <th>Entity ID</th>
+          <th>Total docs</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngIf="metrics.topEntities.length === 0">
+          <td colspan="3">Aucune donnée</td>
+        </tr>
+        <tr *ngFor="let top of metrics.topEntities">
+          <td>{{ top.entityType }}</td>
+          <td>{{ top.entityId }}</td>
+          <td>{{ top.totalDocuments }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card" *ngIf="metrics">
+    <h3>Catalogues de documents</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Catalogue</th>
+          <th>Documents</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let bucket of metrics.byCatalog">
+          <td>{{ bucket.title }} ({{ bucket.key }})</td>
+          <td>{{ bucket.total }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card filters">
+    <div class="form-group">
+      <label>Catalogue</label>
+      <select [(ngModel)]="selectedCatalogKey">
+        <option value="">Tous les catalogues</option>
+        <option *ngFor="let catalog of catalogs" [value]="catalog.key">{{ catalog.title }}</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Entity ID</label>
+      <input type="text" [(ngModel)]="entityIdFilter" />
+    </div>
+    <div class="form-group">
+      <label>Entity Type</label>
+      <select [(ngModel)]="entityTypeFilter">
+        <option value="">Tous</option>
+        <option *ngFor="let type of entityTypes" [value]="type">{{ type }}</option>
+      </select>
+    </div>
+    <div class="actions">
+      <button class="btn-primary" (click)="load()">Filtrer</button>
+      <button class="btn-accent" (click)="analyzeContext()">Analyse métier</button>
+      <button class="btn-secondary" (click)="clearFilters()">Réinitialiser</button>
+    </div>
+  </div>
+
+  <div class="card" *ngIf="context">
+    <h3>Analyse contextuelle {{ context.entityType }} #{{ context.entityId }}</h3>
+    <div class="context-grid">
+      <div>
+        <strong>Total documents:</strong> {{ context.insights.totalDocuments }}
+      </div>
+      <div>
+        <strong>Dernier upload:</strong> {{ context.insights.lastUploadAt ? (context.insights.lastUploadAt | date: 'dd/MM/yyyy HH:mm') : '-' }}
+      </div>
+      <div>
+        <strong>Documents manquants recommandés:</strong>
+        <span *ngIf="context.insights.missingDocuments.length === 0">Aucun</span>
+        <span *ngIf="context.insights.missingDocuments.length > 0">{{ context.insights.missingDocuments.join(', ') }}</span>
+      </div>
+      <div>
+        <strong>Donnée entité externe:</strong>
+        <span *ngIf="context.entitySnapshot?.available">Disponible</span>
+        <span *ngIf="!context.entitySnapshot?.available">Indisponible</span>
+      </div>
+    </div>
+    <pre *ngIf="context.entitySnapshot?.available" class="snapshot">{{ context.entitySnapshot?.data | json }}</pre>
+  </div>
+
+  <div class="card" *ngIf="!loading">
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Nom fichier</th>
+          <th>Entity ID</th>
+          <th>Entity Type</th>
+          <th>Document Type</th>
+          <th>Source</th>
+          <th>Catalogue</th>
+          <th>Date</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngIf="documents.length === 0">
+          <td colspan="9">Aucun document trouvé</td>
+        </tr>
+        <tr *ngFor="let document of documents">
+          <td>{{ document.id }}</td>
+          <td>{{ document.filename }}</td>
+          <td>{{ document.entityId }}</td>
+          <td>{{ document.entityType }}</td>
+          <td>{{ document.documentType }}</td>
+          <td>{{ document.sourceService }}</td>
+          <td>{{ document.catalogTitle || document.catalogKey || '-' }}</td>
+          <td>{{ document.created_at | date: 'dd/MM/yyyy HH:mm' }}</td>
+          <td>
+            <button class="btn-primary small" (click)="download(document)">Télécharger</button>
+            <button class="btn-danger small" (click)="remove(document)">Supprimer</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="loading" *ngIf="loading">Chargement...</div>
+  <div class="loading" *ngIf="metricsLoading">Chargement KPI...</div>
+  <div class="loading" *ngIf="contextLoading">Analyse en cours...</div>
+  <div class="loading" *ngIf="catalogsLoading">Chargement catalogues...</div>
+</div>

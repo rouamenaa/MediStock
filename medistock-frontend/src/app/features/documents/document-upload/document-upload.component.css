@@ -1,0 +1,54 @@
+.page-container {
+  padding: 24px;
+}
+
+.page-header {
+  margin-bottom: 16px;
+}
+
+.card {
+  background: #ffffff;
+  border-radius: 10px;
+  padding: 20px;
+  border: 1px solid #e8e8e8;
+  max-width: 700px;
+}
+
+.form-group {
+  margin-bottom: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+input,
+select {
+  border: 1px solid #d8d8d8;
+  border-radius: 6px;
+  padding: 10px;
+}
+
+.btn-primary {
+  border: none;
+  border-radius: 6px;
+  padding: 10px 16px;
+  background-color: #2b6cb0;
+  color: #ffffff;
+  cursor: pointer;
+}
+
+.message {
+  margin-bottom: 12px;
+  padding: 10px;
+  border-radius: 6px;
+}
+
+.message.success {
+  background: #e6ffed;
+  color: #157f3d;
+}
+
+.message.error {
+  background: #ffe8e8;
+  color: #a11a1a;
+}

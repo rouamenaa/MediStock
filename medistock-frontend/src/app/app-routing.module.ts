@@ -55,6 +55,11 @@ const routes: Routes = [
 
 
 
+  },
+  {
+    path: 'documents',
+    loadChildren: () => import('./features/documents/document.module')
+      .then(m => m.DocumentModule)
   }
 
 
@@ -72,5 +77,4 @@ const routes: Routes = [
 })
 
 export class AppRoutingModule { }
-
 

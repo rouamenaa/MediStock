@@ -1,0 +1,51 @@
+<div class="page-container">
+  <div class="page-header">
+    <h2>Document Catalog System</h2>
+    <p>Publier un document dans un catalogue métier généré par un microservice</p>
+  </div>
+
+  <div class="message success" *ngIf="successMessage">{{ successMessage }}</div>
+  <div class="message error" *ngIf="errorMessage">{{ errorMessage }}</div>
+
+  <div class="card">
+    <div class="message" *ngIf="loadingCatalogs">Chargement des catalogues...</div>
+
+    <div class="form-group">
+      <label>Catalogue</label>
+      <select [(ngModel)]="selectedCatalogKey" (ngModelChange)="onCatalogChange()">
+        <option *ngFor="let catalog of catalogs" [value]="catalog.key">{{ catalog.title }} ({{ catalog.key }})</option>
+      </select>
+    </div>
+
+    <div class="form-group" *ngIf="selectedCatalog">
+      <label>Microservice source</label>
+      <input type="text" [value]="selectedCatalog.sourceService" disabled />
+    </div>
+
+    <div class="form-group" *ngIf="selectedCatalog">
+      <label>Type d'entité</label>
+      <input type="text" [value]="selectedCatalog.entityType" disabled />
+    </div>
+
+    <div class="form-group">
+      <label>Fichier</label>
+      <input type="file" (change)="onFileSelected($event)" />
+    </div>
+
+    <div class="form-group">
+      <label>Référence métier</label>
+      <input type="text" [(ngModel)]="referenceId" placeholder="Ex: orderId, medicationId, stockItemId..." />
+    </div>
+
+    <div class="form-group">
+      <label>Document Type</label>
+      <select [(ngModel)]="documentType">
+        <option *ngFor="let type of availableDocumentTypes" [value]="type">{{ type }}</option>
+      </select>
+    </div>
+
+    <button class="btn-primary" (click)="upload()" [disabled]="loading">
+      {{ loading ? 'Publication en cours...' : 'Publier dans le catalogue' }}
+    </button>
+  </div>
+</div>
