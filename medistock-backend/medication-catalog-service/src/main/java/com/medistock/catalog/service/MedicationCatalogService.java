@@ -20,13 +20,16 @@ public class MedicationCatalogService {
     private final MedicationRepository medicationRepository;
     private final ActivePrincipleRepository activePrincipleRepository;
     private final CategoryService categoryService;
+    private final DocumentCatalogPublisher documentCatalogPublisher;
 
     public MedicationCatalogService(MedicationRepository medicationRepository,
                                     ActivePrincipleRepository activePrincipleRepository,
-                                    CategoryService categoryService) {
+                                    CategoryService categoryService,
+                                    DocumentCatalogPublisher documentCatalogPublisher) {
         this.medicationRepository = medicationRepository;
         this.activePrincipleRepository = activePrincipleRepository;
         this.categoryService = categoryService;
+        this.documentCatalogPublisher = documentCatalogPublisher;
     }
 
     /** Ajouter un médicament */
@@ -56,7 +59,9 @@ public class MedicationCatalogService {
             m.setCategories(categories);
         }
         m = medicationRepository.save(m);
-        return toDto(m);
+        MedicationDto created = toDto(m);
+        documentCatalogPublisher.publishMedicationTechnicalSheet(created);
+        return created;
     }
 
     /** Associer des catégories à un médicament */

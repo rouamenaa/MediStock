@@ -1,9 +1,12 @@
 package com.esprit.microservice.orderservice.service;
 
+import com.esprit.microservice.orderservice.client.DocumentServiceClient;
 import com.esprit.microservice.orderservice.client.MedicationCatalogClient;
 import com.esprit.microservice.orderservice.client.PharmacyManagementClient;
 import com.esprit.microservice.orderservice.dto.MedicationCatalogDto;
 import com.esprit.microservice.orderservice.dto.OrderCreatedEventDto;
+import com.esprit.microservice.orderservice.dto.OrderDocumentGenerationRequestDto;
+import com.esprit.microservice.orderservice.dto.OrderDocumentLineDto;
 import com.esprit.microservice.orderservice.dto.OrderLineEventDto;
 import com.esprit.microservice.orderservice.entity.Order;
 import com.esprit.microservice.orderservice.entity.OrderItem;
@@ -40,6 +43,8 @@ public class OrderService {
     private MedicationCatalogClient medicationCatalogClient;
     @Autowired
     private PharmacyManagementClient pharmacyManagementClient;
+    @Autowired
+    private DocumentServiceClient documentServiceClient;
 
     public Order createOrder(Order order) {
         validatePharmacy(order.getPharmacyId());
@@ -72,6 +77,7 @@ public class OrderService {
 
         Order saved = orderRepository.save(order);
         orderCreatedProducer.publish(toOrderCreatedEvent(saved));
+        generateDocumentForCreatedOrder(saved);
         log.info("Commande créée : {}", saved.getOrderNumber());
         return saved;
     }
@@ -206,5 +212,42 @@ public class OrderService {
         }
         event.setItems(lines);
         return event;
+    }
+
+    private void generateDocumentForCreatedOrder(Order order) {
+        try {
+            documentServiceClient.generateOrderDocument(toOrderDocumentGenerationRequest(order));
+        } catch (Exception ex) {
+            log.error("Échec génération document pour commande {}: {}", order.getOrderNumber(), ex.getMessage());
+        }
+    }
+
+    private OrderDocumentGenerationRequestDto toOrderDocumentGenerationRequest(Order order) {
+        OrderDocumentGenerationRequestDto request = new OrderDocumentGenerationRequestDto();
+        request.setOrderId(order.getId());
+        request.setOrderNumber(order.getOrderNumber());
+        request.setPatientId(order.getPatientId());
+        request.setPatientName(order.getPatientName());
+        request.setPharmacyId(order.getPharmacyId());
+        request.setStatus(order.getStatus() == null ? null : order.getStatus().name());
+        request.setTotalAmount(order.getTotalAmount());
+        request.setCreatedAt(order.getCreatedAt() == null ? null : order.getCreatedAt().toString());
+
+        List<OrderItem> orderItems = order.getItems();
+        List<OrderDocumentLineDto> lines = new ArrayList<>();
+        if (orderItems != null) {
+            for (OrderItem item : orderItems) {
+                OrderDocumentLineDto line = new OrderDocumentLineDto();
+                line.setMedicationId(item.getMedicationId());
+                line.setMedicationName(item.getMedicationName());
+                line.setMedicationCode(item.getMedicationCode());
+                line.setQuantity(item.getQuantity());
+                line.setUnitPrice(item.getUnitPrice());
+                line.setTotalPrice(item.getTotalPrice());
+                lines.add(line);
+            }
+        }
+        request.setItems(lines);
+        return request;
     }
 }
