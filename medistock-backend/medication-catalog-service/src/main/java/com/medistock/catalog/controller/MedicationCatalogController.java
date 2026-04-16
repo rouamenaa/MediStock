@@ -42,6 +42,19 @@ public class MedicationCatalogController {
         return ResponseEntity.ok(catalogService.getById(id));
     }
 
+    /** Récupérer un médicament actif par code produit + dosage */
+    @GetMapping("/lookup")
+    public ResponseEntity<MedicationDto> getByProductCodeAndDosage(@RequestParam String productCode,
+                                                                    @RequestParam String dosage) {
+        if (productCode == null || productCode.isBlank()) {
+            throw new IllegalArgumentException("productCode is required");
+        }
+        if (dosage == null || dosage.isBlank()) {
+            throw new IllegalArgumentException("dosage is required");
+        }
+        return ResponseEntity.ok(catalogService.getByProductCodeAndDosage(productCode, dosage));
+    }
+
     /** Recherche par nom de médicament */
     @GetMapping
     public ResponseEntity<List<MedicationDto>> searchByName(@RequestParam(required = false) String name) {

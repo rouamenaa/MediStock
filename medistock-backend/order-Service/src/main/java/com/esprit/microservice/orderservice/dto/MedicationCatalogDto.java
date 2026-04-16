@@ -7,6 +7,7 @@ public class MedicationCatalogDto {
     private Long id;
     private String name;
     private String productCode;
+    private String dosage;
 
     public Long getId() {
         return id;
@@ -30,5 +31,13 @@ public class MedicationCatalogDto {
 
     public void setProductCode(String productCode) {
         this.productCode = productCode;
+    }
+
+    public String getDosage() {
+        return dosage;
+    }
+
+    public void setDosage(String dosage) {
+        this.dosage = dosage;
     }
 }

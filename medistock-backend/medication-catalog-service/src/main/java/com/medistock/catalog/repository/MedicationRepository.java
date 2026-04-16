@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface MedicationRepository extends JpaRepository<Medication, Long> {
 
@@ -25,4 +26,6 @@ public interface MedicationRepository extends JpaRepository<Medication, Long> {
 
     @Query("SELECT m FROM Medication m JOIN m.categories c WHERE c.id = :categoryId AND m.active = true")
     List<Medication> findByCategoryId(@Param("categoryId") Long categoryId);
+
+    Optional<Medication> findByProductCodeIgnoreCaseAndDosageIgnoreCaseAndActiveTrue(String productCode, String dosage);
 }

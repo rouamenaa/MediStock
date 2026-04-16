@@ -4,6 +4,7 @@ import com.medistock.catalog.domain.ActivePrinciple;
 import com.medistock.catalog.domain.Category;
 import com.medistock.catalog.domain.Medication;
 import com.medistock.catalog.dto.*;
+import com.medistock.catalog.messaging.CatalogRabbitEventEmitter;
 import com.medistock.catalog.repository.ActivePrincipleRepository;
 import com.medistock.catalog.repository.MedicationRepository;
 import org.springframework.stereotype.Service;
@@ -20,13 +21,19 @@ public class MedicationCatalogService {
     private final MedicationRepository medicationRepository;
     private final ActivePrincipleRepository activePrincipleRepository;
     private final CategoryService categoryService;
+    private final DocumentCatalogPublisher documentCatalogPublisher;
+    private final CatalogRabbitEventEmitter catalogEvents;
 
     public MedicationCatalogService(MedicationRepository medicationRepository,
                                     ActivePrincipleRepository activePrincipleRepository,
-                                    CategoryService categoryService) {
+                                    CategoryService categoryService,
+                                    DocumentCatalogPublisher documentCatalogPublisher,
+                                    CatalogRabbitEventEmitter catalogEvents) {
         this.medicationRepository = medicationRepository;
         this.activePrincipleRepository = activePrincipleRepository;
         this.categoryService = categoryService;
+        this.documentCatalogPublisher = documentCatalogPublisher;
+        this.catalogEvents = catalogEvents;
     }
 
     /** Ajouter un médicament */
@@ -56,7 +63,10 @@ public class MedicationCatalogService {
             m.setCategories(categories);
         }
         m = medicationRepository.save(m);
-        return toDto(m);
+        MedicationDto created = toDto(m);
+        documentCatalogPublisher.publishMedicationTechnicalSheet(created);
+        catalogEvents.medicationCreated(created);
+        return created;
     }
 
     /** Associer des catégories à un médicament */
@@ -70,7 +80,9 @@ public class MedicationCatalogService {
         m.getCategories().clear();
         m.getCategories().addAll(categories);
         m = medicationRepository.save(m);
-        return toDto(m);
+        MedicationDto updated = toDto(m);
+        catalogEvents.medicationUpdated(updated);
+        return updated;
     }
 
     /** Déclarer un médicament comme équivalent générique d'un médicament de référence */
@@ -80,7 +92,9 @@ public class MedicationCatalogService {
         Medication generic = medicationRepository.findById(request.getGenericMedicationId()).orElseThrow(() -> new ResourceNotFoundException("Medication", request.getGenericMedicationId()));
         generic.setReferenceMedication(reference);
         generic = medicationRepository.save(generic);
-        return toDto(generic);
+        MedicationDto genDto = toDto(generic);
+        catalogEvents.medicationUpdated(genDto);
+        return genDto;
     }
 
     /** Retirer l'association générique */
@@ -89,7 +103,9 @@ public class MedicationCatalogService {
         Medication m = medicationRepository.findById(medicationId).orElseThrow(() -> new ResourceNotFoundException("Medication", medicationId));
         m.setReferenceMedication(null);
         m = medicationRepository.save(m);
-        return toDto(m);
+        MedicationDto cleared = toDto(m);
+        catalogEvents.medicationUpdated(cleared);
+        return cleared;
     }
 
     /** Rechercher par principe actif (nom ou code) */
@@ -115,6 +131,17 @@ public class MedicationCatalogService {
     public MedicationDto getById(Long id) {
         Medication m = medicationRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Medication", id));
         return toDto(m);
+    }
+
+    @Transactional(readOnly = true)
+    public MedicationDto getByProductCodeAndDosage(String productCode, String dosage) {
+        Medication medication = medicationRepository
+            .findByProductCodeIgnoreCaseAndDosageIgnoreCaseAndActiveTrue(productCode.trim(), dosage.trim())
+            .orElseThrow(() -> new ResourceNotFoundException(
+                "Medication",
+                "productCode=" + productCode + ", dosage=" + dosage
+            ));
+        return toDto(medication);
     }
 
     @Transactional(readOnly = true)
@@ -144,7 +171,9 @@ public class MedicationCatalogService {
             m.setCategories(categories);
         }
         m = medicationRepository.save(m);
-        return toDto(m);
+        MedicationDto saved = toDto(m);
+        catalogEvents.medicationUpdated(saved);
+        return saved;
     }
 
     /**
@@ -157,9 +186,11 @@ public class MedicationCatalogService {
         for (Medication generic : medicationRepository.findByReferenceMedicationId(id)) {
             generic.setReferenceMedication(null);
             medicationRepository.save(generic);
+            catalogEvents.medicationUpdated(toDto(generic));
         }
         m.getCategories().clear();
         medicationRepository.delete(m);
+        catalogEvents.medicationDeleted(id);
     }
 
     private MedicationDto toDto(Medication m) {

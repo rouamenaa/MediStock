@@ -3,6 +3,7 @@ package com.medistock.catalog.service;
 import com.medistock.catalog.domain.Category;
 import com.medistock.catalog.domain.Medication;
 import com.medistock.catalog.dto.CategoryDto;
+import com.medistock.catalog.messaging.CatalogRabbitEventEmitter;
 import com.medistock.catalog.repository.CategoryRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,9 +16,13 @@ import java.util.stream.Collectors;
 public class CategoryService {
 
     private final CategoryRepository repository;
+    private final CatalogRabbitEventEmitter catalogEvents;
 
-    public CategoryService(CategoryRepository repository) {
-        this.repository = repository;
+    public CategoryService(
+            CategoryRepository categoryRepository,
+            CatalogRabbitEventEmitter catalogRabbitEventEmitter) {
+        this.repository = categoryRepository;
+        this.catalogEvents = catalogRabbitEventEmitter;
     }
 
     @Transactional(readOnly = true)
@@ -39,7 +44,9 @@ public class CategoryService {
         entity.setName(dto.getName());
         entity.setDescription(dto.getDescription());
         entity = repository.save(entity);
-        return toDto(entity);
+        CategoryDto created = toDto(entity);
+        catalogEvents.categoryCreated(created);
+        return created;
     }
 
     @Transactional
@@ -48,17 +55,21 @@ public class CategoryService {
         entity.setName(dto.getName());
         entity.setDescription(dto.getDescription());
         entity = repository.save(entity);
-        return toDto(entity);
+        CategoryDto updated = toDto(entity);
+        catalogEvents.categoryUpdated(updated);
+        return updated;
     }
 
     /** Retire la catégorie des médicaments associés puis supprime l'entité. */
     @Transactional
     public void delete(Long id) {
         Category entity = repository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Category", id));
-        for (Medication m : new HashSet<>(entity.getMedications())) {
-            m.getCategories().remove(entity);
+        for (Medication medication : new HashSet<>(entity.getMedications())) {
+            medication.getCategories().remove(entity);
         }
+        Long categoryId = entity.getId();
         repository.delete(entity);
+        catalogEvents.categoryDeleted(categoryId);
     }
 
     Category getEntityById(Long id) {

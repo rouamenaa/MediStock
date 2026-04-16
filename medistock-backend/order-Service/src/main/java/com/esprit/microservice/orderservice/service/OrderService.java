@@ -1,9 +1,12 @@
 package com.esprit.microservice.orderservice.service;
 
+import com.esprit.microservice.orderservice.client.DocumentServiceClient;
 import com.esprit.microservice.orderservice.client.MedicationCatalogClient;
 import com.esprit.microservice.orderservice.client.PharmacyManagementClient;
 import com.esprit.microservice.orderservice.dto.MedicationCatalogDto;
 import com.esprit.microservice.orderservice.dto.OrderCreatedEventDto;
+import com.esprit.microservice.orderservice.dto.OrderDocumentGenerationRequestDto;
+import com.esprit.microservice.orderservice.dto.OrderDocumentLineDto;
 import com.esprit.microservice.orderservice.dto.OrderLineEventDto;
 import com.esprit.microservice.orderservice.entity.Order;
 import com.esprit.microservice.orderservice.entity.OrderItem;
@@ -40,6 +43,8 @@ public class OrderService {
     private MedicationCatalogClient medicationCatalogClient;
     @Autowired
     private PharmacyManagementClient pharmacyManagementClient;
+    @Autowired
+    private DocumentServiceClient documentServiceClient;
 
     public Order createOrder(Order order) {
         validatePharmacy(order.getPharmacyId());
@@ -53,8 +58,12 @@ public class OrderService {
             BigDecimal total = BigDecimal.ZERO;
             for (OrderItem item : items) {
                 MedicationCatalogDto medication = validateAndGetMedication(item);
+                item.setMedicationId(medication.getId());
                 item.setMedicationName(medication.getName());
                 item.setMedicationCode(medication.getProductCode());
+                if (medication.getDosage() != null && !medication.getDosage().isBlank()) {
+                    item.setDosage(medication.getDosage());
+                }
                 if (item.getUnitPrice() != null && item.getQuantity() != null) {
                     BigDecimal subTotal = item.getUnitPrice()
                             .multiply(BigDecimal.valueOf(item.getQuantity()));
@@ -71,7 +80,15 @@ public class OrderService {
         }
 
         Order saved = orderRepository.save(order);
-        orderCreatedProducer.publish(toOrderCreatedEvent(saved));
+        try {
+            orderCreatedProducer.publish(toOrderCreatedEvent(saved));
+        } catch (Exception ex) {
+            // Do not fail order creation when RabbitMQ is unavailable.
+            log.error("Échec publication événement commande {}: {}", saved.getOrderNumber(), ex.getMessage());
+        }
+        generateDocumentForCreatedOrder(saved);
+        // Prevent lazy collection serialization issues on HTTP response.
+        saved.setItems(saved.getItems() == null ? new ArrayList<>() : new ArrayList<>(saved.getItems()));
         log.info("Commande créée : {}", saved.getOrderNumber());
         return saved;
     }
@@ -163,16 +180,57 @@ public class OrderService {
             pharmacyManagementClient.getPharmacyById(pharmacyId);
         } catch (FeignException.NotFound ex) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unknown pharmacyId: " + pharmacyId);
+        } catch (FeignException ex) {
+            // Do not block order creation when downstream service discovery is unstable.
+            log.warn("Pharmacy validation skipped for pharmacyId {} due to downstream error: {}", pharmacyId, ex.getMessage());
+        } catch (Exception ex) {
+            log.warn("Pharmacy validation skipped for pharmacyId {} due to connectivity error: {}", pharmacyId, ex.getMessage());
         }
     }
 
     private MedicationCatalogDto validateAndGetMedication(OrderItem item) {
-        if (item == null || item.getMedicationId() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "medicationId is required");
+        if (item == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Order item is required");
         }
         if (item.getQuantity() == null || item.getQuantity() <= 0) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Item quantity must be greater than zero");
         }
+        String productCode = item.getMedicationCode();
+        String dosage = item.getDosage();
+
+        if (productCode != null && !productCode.isBlank() && dosage != null && !dosage.isBlank()) {
+            return lookupMedicationByProductCodeAndDosage(item, productCode, dosage);
+        }
+        if (item.getMedicationId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Provide medicationCode and dosage, or medicationId");
+        }
+        return lookupMedicationById(item);
+    }
+
+    private MedicationCatalogDto lookupMedicationByProductCodeAndDosage(OrderItem item, String productCode, String dosage) {
+        try {
+            MedicationCatalogDto medication = medicationCatalogClient.getMedicationByProductCodeAndDosage(productCode, dosage);
+            if (medication == null || medication.getId() == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "Unknown medication for productCode: " + productCode + ", dosage: " + dosage);
+            }
+            return medication;
+        } catch (FeignException.NotFound ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Unknown medication for productCode: " + productCode + ", dosage: " + dosage);
+        } catch (FeignException ex) {
+            log.warn("Medication lookup skipped for productCode {} and dosage {} due to downstream error: {}",
+                    productCode, dosage, ex.getMessage());
+            return buildFallbackMedication(item);
+        } catch (Exception ex) {
+            log.warn("Medication lookup skipped for productCode {} and dosage {} due to connectivity error: {}",
+                    productCode, dosage, ex.getMessage());
+            return buildFallbackMedication(item);
+        }
+    }
+
+    private MedicationCatalogDto lookupMedicationById(OrderItem item) {
         try {
             MedicationCatalogDto medication = medicationCatalogClient.getMedicationById(item.getMedicationId());
             if (medication == null || medication.getId() == null) {
@@ -183,7 +241,38 @@ public class OrderService {
         } catch (FeignException.NotFound ex) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "Unknown medicationId: " + item.getMedicationId());
+        } catch (FeignException ex) {
+            // Fallback to request payload when catalog lookup is temporarily unavailable.
+            log.warn("Medication lookup skipped for medicationId {} due to downstream error: {}",
+                    item.getMedicationId(), ex.getMessage());
+            return buildFallbackMedication(item);
+        } catch (Exception ex) {
+            log.warn("Medication lookup skipped for medicationId {} due to connectivity error: {}",
+                    item.getMedicationId(), ex.getMessage());
+            return buildFallbackMedication(item);
         }
+    }
+
+    private MedicationCatalogDto buildFallbackMedication(OrderItem item) {
+        MedicationCatalogDto fallback = new MedicationCatalogDto();
+        fallback.setId(item.getMedicationId());
+        fallback.setName((item.getMedicationName() == null || item.getMedicationName().isBlank())
+                ? fallbackMedicationName(item)
+                : item.getMedicationName());
+        fallback.setProductCode(item.getMedicationCode());
+        fallback.setDosage(item.getDosage());
+        return fallback;
+    }
+
+    private String fallbackMedicationName(OrderItem item) {
+        if (item.getMedicationCode() != null && !item.getMedicationCode().isBlank()) {
+            String dosageSuffix = (item.getDosage() == null || item.getDosage().isBlank()) ? "" : " " + item.getDosage();
+            return "Medication " + item.getMedicationCode() + dosageSuffix;
+        }
+        if (item.getMedicationId() != null) {
+            return "Medication #" + item.getMedicationId();
+        }
+        return "Medication";
     }
 
     private OrderCreatedEventDto toOrderCreatedEvent(Order order) {
@@ -206,5 +295,42 @@ public class OrderService {
         }
         event.setItems(lines);
         return event;
+    }
+
+    private void generateDocumentForCreatedOrder(Order order) {
+        try {
+            documentServiceClient.generateOrderDocument(toOrderDocumentGenerationRequest(order));
+        } catch (Exception ex) {
+            log.error("Échec génération document pour commande {}: {}", order.getOrderNumber(), ex.getMessage());
+        }
+    }
+
+    private OrderDocumentGenerationRequestDto toOrderDocumentGenerationRequest(Order order) {
+        OrderDocumentGenerationRequestDto request = new OrderDocumentGenerationRequestDto();
+        request.setOrderId(order.getId());
+        request.setOrderNumber(order.getOrderNumber());
+        request.setPatientId(order.getPatientId());
+        request.setPatientName(order.getPatientName());
+        request.setPharmacyId(order.getPharmacyId());
+        request.setStatus(order.getStatus() == null ? null : order.getStatus().name());
+        request.setTotalAmount(order.getTotalAmount());
+        request.setCreatedAt(order.getCreatedAt() == null ? null : order.getCreatedAt().toString());
+
+        List<OrderItem> orderItems = order.getItems();
+        List<OrderDocumentLineDto> lines = new ArrayList<>();
+        if (orderItems != null) {
+            for (OrderItem item : orderItems) {
+                OrderDocumentLineDto line = new OrderDocumentLineDto();
+                line.setMedicationId(item.getMedicationId());
+                line.setMedicationName(item.getMedicationName());
+                line.setMedicationCode(item.getMedicationCode());
+                line.setQuantity(item.getQuantity());
+                line.setUnitPrice(item.getUnitPrice());
+                line.setTotalPrice(item.getTotalPrice());
+                lines.add(line);
+            }
+        }
+        request.setItems(lines);
+        return request;
     }
 }
