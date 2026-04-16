@@ -134,6 +134,17 @@ public class MedicationCatalogService {
     }
 
     @Transactional(readOnly = true)
+    public MedicationDto getByProductCodeAndDosage(String productCode, String dosage) {
+        Medication medication = medicationRepository
+            .findByProductCodeIgnoreCaseAndDosageIgnoreCaseAndActiveTrue(productCode.trim(), dosage.trim())
+            .orElseThrow(() -> new ResourceNotFoundException(
+                "Medication",
+                "productCode=" + productCode + ", dosage=" + dosage
+            ));
+        return toDto(medication);
+    }
+
+    @Transactional(readOnly = true)
     public List<MedicationDto> searchByName(String name) {
         if (name == null || name.isBlank()) return medicationRepository.findAll().stream().filter(Medication::isActive).map(this::toDto).collect(Collectors.toList());
         return medicationRepository.findByNameContainingIgnoreCaseAndActiveTrue(name.trim()).stream().map(this::toDto).collect(Collectors.toList());

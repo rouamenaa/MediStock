@@ -21,6 +21,7 @@ public class CatalogApiController {
             "description", "Base de référence des médicaments - Medistock",
             "endpoints", Map.of(
                 "medications", "/api/catalog/medications",
+                "medicationLookupByCodeAndDosage", "/api/catalog/medications/lookup?productCode=...&dosage=...",
                 "categories", "/api/catalog/categories",
                 "activePrinciples", "/api/catalog/active-principles",
                 "searchByActivePrinciple", "/api/catalog/medications/search/by-active-principle?q=...",
