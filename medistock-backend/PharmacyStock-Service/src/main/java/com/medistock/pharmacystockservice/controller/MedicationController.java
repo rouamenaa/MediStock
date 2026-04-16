@@ -2,7 +2,7 @@ package com.medistock.pharmacystockservice.controller;
 
 import com.medistock.pharmacystockservice.entity.Medication;
 import com.medistock.pharmacystockservice.repository.MedicationRepository;
-import org.springframework.web.bind.annotation.CrossOrigin;
+//import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
